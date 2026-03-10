@@ -1,0 +1,72 @@
+/* Radial gradient glow at the bottom of the page */
+.footer-glow {
+  position: relative;
+}
+
+.footer-glow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1200px;
+  height: 300px;
+  background: radial-gradient(ellipse at center bottom, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 30%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.footer-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Gradient line divider above app download buttons */
+.gradient-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.3) 20%, rgba(255, 255, 255, 0.3) 80%, transparent 100%);
+  margin: 0 auto 32px auto;
+  max-width: 602px;
+}
+
+/* Ticker scroll animation - Full viewport width */
+.ticker-container {
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
+  margin-bottom: 0;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  cursor: pointer;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.ticker-container:hover {
+  opacity: 1;
+}
+
+.ticker-content {
+  display: inline-flex;
+  animation: ticker-scroll 90s linear infinite;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.ticker-content span {
+  display: inline-block;
+  padding-right: 4rem;
+  flex-shrink: 0;
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-25%);
+  }
+}

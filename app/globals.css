@@ -1,0 +1,476 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+html {
+  /* Ensure background extends to top edge for iOS status bar bleed */
+  background: #000000;
+  /* Allow bounce scroll */
+  overscroll-behavior: auto;
+  /* Enable momentum scrolling for bounce effect */
+  -webkit-overflow-scrolling: touch;
+  /* Lock html height to viewport */
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Ensure fixed header never moves on iOS, even during overscroll */
+[data-header-fixed] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: translate3d(0, 0, 0) !important;
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  will-change: transform, opacity;
+  /* Create new stacking context to prevent parent transforms from affecting it */
+  isolation: isolate;
+  /* Force hardware acceleration */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Test box - completely fixed and immovable */
+[data-fixed-test-box] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) translate3d(0, 0, 0) !important;
+  -webkit-transform: translate(-50%, -50%) translate3d(0, 0, 0) !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  isolation: isolate !important;
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+body {
+  background: #000000;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  /* Prevent any horizontal scrolling site-wide */
+  overflow-x: hidden;
+  /* Lock body height to viewport - scrolling happens in container */
+  height: 100vh;
+  overflow: hidden;
+  /* Reserve scrollbar space to prevent layout shift */
+  scrollbar-gutter: stable;
+  /* Allow bounce scroll */
+  overscroll-behavior: auto;
+  /* Enable momentum scrolling for bounce effect */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar styling */
+/* Firefox */
+* {
+  scrollbar-width: thick;
+  scrollbar-color: #9f9f9f #1b1b1b;
+}
+
+/* Chrome, Safari, Edge */
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #1b1b1b;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #9f9f9f;
+  border-radius: 6px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #b3b3b3;
+}
+
+/* Scrollbar buttons (arrows) - Chrome/Safari */
+*::-webkit-scrollbar-button {
+  background: #1b1b1b;
+  display: block;
+  height: 12px;
+  width: 12px;
+}
+
+*::-webkit-scrollbar-button:single-button {
+  background-color: #1b1b1b;
+}
+
+*::-webkit-scrollbar-button:single-button:vertical:decrement {
+  border-width: 0 6px 6px 6px;
+  border-color: transparent transparent #9f9f9f transparent;
+}
+
+*::-webkit-scrollbar-button:single-button:vertical:increment {
+  border-width: 6px 6px 0 6px;
+  border-color: #9f9f9f transparent transparent transparent;
+}
+
+*::-webkit-scrollbar-button:single-button:horizontal:decrement {
+  border-width: 6px 6px 6px 0;
+  border-color: transparent #9f9f9f transparent transparent;
+}
+
+*::-webkit-scrollbar-button:single-button:horizontal:increment {
+  border-width: 6px 0 6px 6px;
+  border-color: transparent transparent transparent #9f9f9f;
+}
+
+/* Hide horizontal scrollbars for custom scrollers */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* Hide all scrollbars on Android (applied via HideAndroidScrollbars component) */
+.android * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.android *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.android {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.android::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Hover preview animations */
+@keyframes expandIn {
+  0% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes expandOut {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes slideInFromTop {
+  0% { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Mux Player Global Styling Overrides */
+/* Note: Now using Notflix theme from player.style, but keeping custom overrides for specific needs */
+mux-player {
+  /* Ensure consistent styling across all Mux Player instances */
+  --media-accent-color: #a82e2e !important;
+  --media-primary-color: #ffffff !important;
+  --media-secondary-color: #b3b3b3 !important;
+  
+  /* Dark theme backgrounds */
+  --controls-background: rgba(0, 0, 0, 0.85) !important;
+  --media-control-background: rgba(0, 0, 0, 0.7) !important;
+  
+  /* Progress bar styling */
+  --media-progress-color: #c50000 !important;
+  --media-progress-buffered-color: rgba(255, 255, 255, 0.2) !important;
+  
+  /* Typography */
+  --media-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  --media-font-size: 14px !important;
+  
+  /* Focus states */
+  --media-focus-ring-color: #c50000 !important;
+  
+  /* Smooth transitions */
+  transition: all 0.2s ease-in-out;
+}
+
+/* Remove background colors from spacers */
+mux-player::part(spacer) {
+  background: transparent !important;
+}
+
+mux-player::part(control-spacer) {
+  background: transparent !important;
+}
+
+mux-player::part(control-bar-spacer) {
+  background: transparent !important;
+}
+
+/* Remove backgrounds from any flex/grid spacers */
+mux-player [class*="spacer"] {
+  background: transparent !important;
+}
+
+mux-player [class*="flex"] {
+  background: transparent !important;
+}
+
+/* Ensure control groups don't have backgrounds */
+mux-player::part(control-group) {
+  background: transparent !important;
+}
+
+mux-player::part(control-group-left),
+mux-player::part(control-group-center),
+mux-player::part(control-group-right) {
+  background: transparent !important;
+}
+
+/* Mux Player control bar enhancements */
+mux-player::part(control-bar) {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.9)) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* Mux Player progress bar enhancements */
+mux-player::part(time-range) {
+  height: 4px !important;
+  border-radius: 2px !important;
+  background: transparent !important;
+}
+
+mux-player::part(time-range-track) {
+  background: transparent !important;
+}
+
+mux-player::part(time-range-buffered) {
+  background: transparent !important;
+}
+
+mux-player::part(time-range-thumb) {
+  background: #ffffff !important;
+  border: 2px solid #c50000 !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease-in-out;
+}
+
+mux-player::part(time-range-thumb):hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 4px rgba(197, 0, 0, 0.3);
+}
+
+/* Mux Player button styling */
+mux-player::part(control) {
+  color: #ffffff !important;
+  transition: all 0.2s ease-in-out;
+}
+
+mux-player::part(control):hover {
+  background: rgba(197, 0, 0, 0.2) !important;
+  color: #ffffff !important;
+}
+
+/* Mux Player time display */
+mux-player::part(time) {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+}
+
+/* Mux Player volume controls */
+mux-player::part(volume-range) {
+  --media-range-track-background: rgba(255, 255, 255, 0.2) !important;
+  --media-range-progress-color: #c50000 !important;
+}
+
+/* Mux Player loading states */
+mux-player::part(loading-indicator) {
+  color: #c50000 !important;
+}
+
+/* Mux Player captions */
+mux-player::part(captions) {
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  border-radius: 4px !important;
+  padding: 8px 12px !important;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  mux-player::part(control-bar) {
+    padding: 8px 12px !important;
+  }
+  
+  mux-player::part(time) {
+    font-size: 12px !important;
+  }
+  
+  mux-player::part(time-range-thumb) {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
+
+/* Main scroll container styling */
+#main-scroll-container {
+  overscroll-behavior: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Disable text selection and image dragging on mobile */
+@media (max-width: 639px) {
+  /* Disable text selection globally on mobile */
+  body * {
+    /* Disable text selection */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    
+    /* Disable iOS callout menu (the popup that appears on long press) */
+    -webkit-touch-callout: none;
+    
+    /* Disable image dragging */
+    -webkit-user-drag: none;
+    user-drag: none;
+    -khtml-user-drag: none;
+  }
+  
+  /* Allow text selection for input fields, textareas, and contenteditable elements */
+  input,
+  textarea,
+  [contenteditable="true"],
+  [contenteditable="true"] *,
+  input *,
+  textarea * {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+    -webkit-touch-callout: default !important;
+  }
+  
+  /* Disable image selection specifically */
+  img,
+  video,
+  picture,
+  svg {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-drag: none !important;
+    user-drag: none !important;
+    pointer-events: auto; /* Ensure images are still clickable */
+  }
+}
+
+/* Global seek bar styling - cross-browser compatible */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* WebKit (Chrome, Safari, Edge) track styling */
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, #ffffff var(--progress, 0%), rgba(255, 255, 255, 0.5) var(--progress, 0%) 100%);
+  border-radius: 2px;
+}
+
+/* WebKit thumb styling */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: grab;
+  margin-top: -4px; /* Center thumb on track: (12px thumb - 4px track) / 2 = 4px */
+  transition: background 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  background: #e0e0e0;
+}
+
+/* Firefox track styling */
+input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, #ffffff var(--progress, 0%), rgba(255, 255, 255, 0.5) var(--progress, 0%) 100%);
+  border-radius: 2px;
+  border: none;
+}
+
+/* Firefox thumb styling */
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: grab;
+  border: none;
+  transition: background 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  cursor: grabbing;
+  background: #e0e0e0;
+}
+
+/* Disabled state */
+input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input[type="range"]:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+
+input[type="range"]:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+}
+

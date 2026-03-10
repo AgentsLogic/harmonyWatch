@@ -1,0 +1,3 @@
+This directory will contain avatar images for the comments section.
+For now, the components will use fallback SVG icons when images are not found.
+

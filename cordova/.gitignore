@@ -1,0 +1,8 @@
+www/
+node_modules/
+platforms/
+plugins/
+build/
+dist/
+*.log
+

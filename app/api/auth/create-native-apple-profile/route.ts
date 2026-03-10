@@ -1,0 +1,198 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { publicConfig, serverConfig } from '@/lib/env';
+
+const supabase = createClient(
+  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
+  publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+const supabaseService = createClient(
+  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
+  serverConfig.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  }
+);
+
+// Helper function to set auth cookies
+function setAuthCookies(response: NextResponse, accessToken: string, refreshToken?: string) {
+  response.cookies.set('sb-access-token', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+    path: '/'
+  });
+
+  if (refreshToken) {
+    response.cookies.set('sb-refresh-token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 90, // 90 days
+      path: '/'
+    });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { accessToken, refreshToken, isSignupFlow, email: emailFromRequest, fullName: fullNameFromRequest } = body;
+
+    // Get the access token from request body or cookies
+    const token = accessToken || request.cookies.get('sb-access-token')?.value;
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: 'No access token found' },
+        { status: 401 }
+      );
+    }
+
+    // Verify the user with Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user profile exists
+    const { data: profile, error: profileError } = await supabaseService
+      .from('user_profiles')
+      .select('display_name, signup_status')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError && profileError.code === 'PGRST116') {
+      // Profile doesn't exist, create it
+      // Try multiple sources for email (Apple Sign-In can put it in different places)
+      // Priority: user.email > emailFromRequest > user_metadata.email
+      const email = user.email || emailFromRequest || user.user_metadata?.email || user.user_metadata?.email_address;
+      
+      // Log what we have for debugging
+      console.log('[Create Profile] User data:', {
+        email: user.email,
+        metadata_email: user.user_metadata?.email,
+        user_metadata: user.user_metadata,
+        has_full_name: !!user.user_metadata?.full_name,
+        has_name: !!user.user_metadata?.name,
+        final_email: email,
+        fullNameFromRequest: fullNameFromRequest,
+      });
+      
+      // Extract display name with proper fallback
+      // Priority: fullNameFromRequest > user_metadata.full_name > user_metadata.name > email prefix
+      let fullName: string | null = null;
+      
+      if (fullNameFromRequest && typeof fullNameFromRequest === 'string' && fullNameFromRequest.trim()) {
+        fullName = fullNameFromRequest.trim();
+      } else if (user.user_metadata?.full_name) {
+        fullName = user.user_metadata.full_name;
+      } else if (user.user_metadata?.name) {
+        fullName = user.user_metadata.name;
+      } else if (email && typeof email === 'string' && email.trim() && email.includes('@')) {
+        // Only use email prefix if email is valid
+        const emailPrefix = email.split('@')[0].trim();
+        if (emailPrefix && emailPrefix.length > 0) {
+          fullName = emailPrefix;
+        }
+      }
+      
+      console.log('[Create Profile] Extracted display_name:', fullName);
+
+      // If isSignupFlow is true, user is going to payment page - set status to 'pending'
+      // Otherwise, user is logging in - set status to 'complete'
+      const signupStatus = isSignupFlow ? 'pending' : 'complete';
+
+      const { error: createError } = await supabaseService
+        .from('user_profiles')
+        .insert({
+          user_id: user.id,
+          user_type: 'free',
+          signup_status: signupStatus,
+          display_name: fullName,
+        });
+
+      if (createError) {
+        console.error('Error creating profile:', createError);
+        return NextResponse.json(
+          { error: 'Failed to create user profile' },
+          { status: 500 }
+        );
+      }
+
+      // Set session cookies so subsequent API calls can authenticate
+      const response = NextResponse.json(
+        { success: true, signup_status: signupStatus },
+        { status: 200 }
+      );
+      
+      if (accessToken) {
+        setAuthCookies(response, accessToken, refreshToken);
+      }
+      
+      return response;
+    }
+
+    // Profile already exists - update display_name if missing or set to default 'User'
+    if (profile && (!profile.display_name || profile.display_name === 'User')) {
+      // Try multiple sources for email (Apple Sign-In can put it in different places)
+      // Priority: user.email > emailFromRequest > user_metadata.email
+      const email = user.email || emailFromRequest || user.user_metadata?.email || user.user_metadata?.email_address;
+      
+      // Extract display name with proper fallback
+      // Priority: fullNameFromRequest > user_metadata.full_name > user_metadata.name > email prefix
+      let fullName: string | null = null;
+      
+      if (fullNameFromRequest && typeof fullNameFromRequest === 'string' && fullNameFromRequest.trim()) {
+        fullName = fullNameFromRequest.trim();
+      } else if (user.user_metadata?.full_name) {
+        fullName = user.user_metadata.full_name;
+      } else if (user.user_metadata?.name) {
+        fullName = user.user_metadata.name;
+      } else if (email && typeof email === 'string' && email.trim() && email.includes('@')) {
+        // Only use email prefix if email is valid
+        const emailPrefix = email.split('@')[0].trim();
+        if (emailPrefix && emailPrefix.length > 0) {
+          fullName = emailPrefix;
+        }
+      }
+      
+      if (fullName) {
+        console.log('[Update Profile] Updating display_name to:', fullName);
+        await supabaseService
+          .from('user_profiles')
+          .update({ display_name: fullName })
+          .eq('user_id', user.id);
+      } else {
+        console.log('[Update Profile] Could not extract display_name, email:', email, 'fullNameFromRequest:', fullNameFromRequest, 'user_metadata:', user.user_metadata);
+      }
+    }
+
+    // Set session cookies so subsequent API calls can authenticate
+    const response = NextResponse.json(
+      { success: true, signup_status: profile?.signup_status },
+      { status: 200 }
+    );
+    
+    if (accessToken) {
+      setAuthCookies(response, accessToken, refreshToken);
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Create native Apple profile error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

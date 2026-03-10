@@ -1,0 +1,19 @@
+{
+  "name": "harmonywatch-cordova",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cordova wrapper for the HarmonyWatch web application.",
+  "scripts": {
+    "prepare": "cordova prepare ios",
+    "build": "cordova build ios",
+    "platform:add": "cordova platform add ios",
+    "plugin:add:music": "cordova plugin add cordova-plugin-music-controls2",
+    "plugin:add:background": "cordova plugin add cordova-plugin-background-mode",
+    "plugin:add:media": "cordova plugin add cordova-plugin-media"
+  },
+  "devDependencies": {
+    "cordova": "^12.0.0",
+    "cordova-ios": "^7.1.1"
+  }
+}
+

@@ -1,0 +1,162 @@
+diff --git a/node_modules/@mediagrid/capacitor-native-audio/android/src/main/java/us/mediagrid/capacitorjs/plugins/nativeaudio/AudioPlayerPlugin.java b/node_modules/@mediagrid/capacitor-native-audio/android/src/main/java/us/mediagrid/capacitorjs/plugins/nativeaudio/AudioPlayerPlugin.java
+index 2e28345..698ed59 100644
+--- a/node_modules/@mediagrid/capacitor-native-audio/android/src/main/java/us/mediagrid/capacitorjs/plugins/nativeaudio/AudioPlayerPlugin.java
++++ b/node_modules/@mediagrid/capacitor-native-audio/android/src/main/java/us/mediagrid/capacitorjs/plugins/nativeaudio/AudioPlayerPlugin.java
+@@ -131,30 +131,33 @@ public class AudioPlayerPlugin extends Plugin {
+ 
+                     commandResult.addListener(
+                         () -> {
+-                            try {
+-                                SessionResult result = commandResult.get();
+-
+-                                if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+-                                    call.resolve();
+-                                } else {
+-                                    Log.e(
+-                                        TAG,
+-                                        String.format(
+-                                            "Couldn't set audio sources on MediaSession. Result code was %s.",
+-                                            result.resultCode
+-                                        )
+-                                    );
++                            // Ensure callback runs on main thread
++                            new Handler(Looper.getMainLooper()).post(() -> {
++                                try {
++                                    SessionResult result = commandResult.get();
++
++                                    if (result.resultCode == SessionResult.RESULT_SUCCESS) {
++                                        call.resolve();
++                                    } else {
++                                        Log.e(
++                                            TAG,
++                                            String.format(
++                                                "Couldn't set audio sources on MediaSession. Result code was %s.",
++                                                result.resultCode
++                                            )
++                                        );
++                                        call.reject(
++                                            "There was an issue initializing the audio player [1]."
++                                        );
++                                    }
++                                } catch (Exception ex) {
++                                    Log.e(TAG, "Couldn't set audio sources on MediaSession.", ex);
+                                     call.reject(
+-                                        "There was an issue initializing the audio player [1]."
++                                        "There was an issue initializing the audio player [2].",
++                                        ex
+                                     );
+                                 }
+-                            } catch (Exception ex) {
+-                                Log.e(TAG, "Couldn't set audio sources on MediaSession.", ex);
+-                                call.reject(
+-                                    "There was an issue initializing the audio player [2].",
+-                                    ex
+-                                );
+-                            }
++                            });
+                         },
+                         MoreExecutors.directExecutor()
+                     );
+@@ -173,38 +176,41 @@ public class AudioPlayerPlugin extends Plugin {
+ 
+                     commandResult.addListener(
+                         () -> {
+-                            try {
+-                                SessionResult result = commandResult.get();
+-
+-                                if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+-                                    call.resolve();
+-                                } else {
++                            // Ensure callback runs on main thread
++                            new Handler(Looper.getMainLooper()).post(() -> {
++                                try {
++                                    SessionResult result = commandResult.get();
++
++                                    if (result.resultCode == SessionResult.RESULT_SUCCESS) {
++                                        call.resolve();
++                                    } else {
++                                        Log.e(
++                                            TAG,
++                                            String.format(
++                                                "Couldn't create player for Audio Id %s. Result code was %s",
++                                                audioSource.id,
++                                                result.resultCode
++                                            )
++                                        );
++                                        call.reject(
++                                            "There was an issue initializing the audio player [3]."
++                                        );
++                                    }
++                                } catch (Exception ex) {
+                                     Log.e(
+                                         TAG,
+                                         String.format(
+-                                            "Couldn't create player for Audio Id %s. Result code was %s",
+-                                            audioSource.id,
+-                                            result.resultCode
+-                                        )
++                                            "Couldn't create player for Audio Id %s",
++                                            audioSource.id
++                                        ),
++                                        ex
+                                     );
+                                     call.reject(
+-                                        "There was an issue initializing the audio player [3]."
++                                        "There was an issue initializing the audio player [4].",
++                                        ex
+                                     );
+                                 }
+-                            } catch (Exception ex) {
+-                                Log.e(
+-                                    TAG,
+-                                    String.format(
+-                                        "Couldn't create player for Audio Id %s",
+-                                        audioSource.id
+-                                    ),
+-                                    ex
+-                                );
+-                                call.reject(
+-                                    "There was an issue initializing the audio player [4].",
+-                                    ex
+-                                );
+-                            }
++                            });
+                         },
+                         MoreExecutors.directExecutor()
+                     );
+@@ -589,19 +595,22 @@ public class AudioPlayerPlugin extends Plugin {
+ 
+             audioMediaControllerFuture.addListener(
+                 () -> {
+-                    try {
+-                        audioMediaController = audioMediaControllerFuture.get();
+-                        callback.run();
+-                    } catch (Exception ex) {
+-                        Log.e(TAG, "Couldn't get MediaController", ex);
+-                        call.reject(
+-                            String.format(
+-                                "There was an issue initializing the MediaController in method %s",
+-                                methodName
+-                            ),
+-                            ex
+-                        );
+-                    }
++                    // Ensure callback runs on main thread
++                    new Handler(Looper.getMainLooper()).post(() -> {
++                        try {
++                            audioMediaController = audioMediaControllerFuture.get();
++                            callback.run();
++                        } catch (Exception ex) {
++                            Log.e(TAG, "Couldn't get MediaController", ex);
++                            call.reject(
++                                String.format(
++                                    "There was an issue initializing the MediaController in method %s",
++                                    methodName
++                                ),
++                                ex
++                            );
++                        }
++                    });
+                 },
+                 MoreExecutors.directExecutor()
+             );

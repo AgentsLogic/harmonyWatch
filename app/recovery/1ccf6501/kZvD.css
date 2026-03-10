@@ -1,0 +1,135 @@
+/* Landing Page Custom Styles */
+
+/* Hero Section Background Animation */
+.hero-bg {
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+  animation: gradientShift 10s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Content Card Hover Effects */
+.content-card {
+  transition: all 0.3s ease-in-out;
+}
+
+.content-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Button Hover Effects */
+.btn-primary {
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+/* Typography Enhancements */
+.hero-title {
+  background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Feature Icons Animation */
+.feature-icon {
+  transition: all 0.3s ease-in-out;
+}
+
+.feature-icon:hover {
+  transform: scale(1.1);
+  color: #c50000;
+}
+
+/* Form Input Focus Effects */
+.form-input {
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 0 0 0 rgba(197, 0, 0, 0);
+}
+
+.form-input:focus {
+  box-shadow: 0 0 0 3px rgba(197, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Scroll Animations */
+.fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease-in-out;
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Background Pattern */
+.bg-pattern {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(197, 0, 0, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(197, 0, 0, 0.05) 0%, transparent 50%);
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.125rem;
+  }
+}
+
+/* Disable scrolling on mobile */
+@media (max-width: 640px) {
+  body {
+    overflow: hidden !important;
+    height: 100vh !important;
+    position: fixed !important;
+    width: 100% !important;
+  }
+}
+
+/* Loading Animation for Images */
+.image-placeholder {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

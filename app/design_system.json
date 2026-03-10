@@ -1,0 +1,200 @@
+{
+  "app_name": "Harmony Streaming Platform",
+  "design_system": {
+    "brand": {
+      "name": "Harmony",
+      "logo_style": {
+        "type": "monogram",
+        "shape": "square",
+        "color": "#ffffff",
+        "background": "#000000",
+        "placement": "top-left"
+      },
+      "tone": "minimalist-sacred",
+      "theme": {
+        "primary": "#ffffff",
+        "accent": "#c50000",
+        "neutral": "#1a1a1a",
+        "text_primary": "#ffffff",
+        "text_secondary": "#b3b3b3"
+      }
+    },
+
+    "typography": {
+      "primary_font": "serif",
+      "secondary_font": "sans-serif",
+      "hierarchy": {
+        "h1": { "fontSize": "2.25rem", "fontWeight": "700", "letterSpacing": "0.02em" },
+        "h2": { "fontSize": "1.5rem", "fontWeight": "600", "letterSpacing": "0.02em" },
+        "h3": { "fontSize": "1.125rem", "fontWeight": "500", "letterSpacing": "0.01em" },
+        "body": { "fontSize": "1rem", "fontWeight": "400", "lineHeight": "1.6" },
+        "caption": { "fontSize": "0.875rem", "color": "#aaaaaa" }
+      },
+      "text_alignment": "left"
+    },
+
+    "layout": {
+      "grid_system": {
+        "columns": 12,
+        "gutter": "1.5rem",
+        "max_width": "1200px",
+        "padding": "2rem"
+      },
+      "page_structure": {
+        "home": {
+          "header": { "type": "hero", "height": "50vh", "overlay": "gradient" },
+          "sections": ["Recently Added", "Continue Watching", "Category Rows"],
+          "row_item_aspect_ratio": "16:9",
+          "max_row_items": 6,
+          "card_spacing": "1rem"
+        },
+        "series_page": {
+          "modal_layout": "centered",
+          "header_image_height": "40vh",
+          "season_dropdown": true,
+          "episode_cards": {
+            "layout": "vertical",
+            "thumbnail_ratio": "16:9",
+            "info_alignment": "left",
+            "padding": "1rem"
+          }
+        },
+        "audio_page": {
+          "player_bar": {
+            "position": "bottom",
+            "controls": ["play", "pause", "seekbar", "volume"],
+            "accent_color": "#c50000"
+          }
+        },
+        "account_page": {
+          "layout": "vertical_cards",
+          "spacing": "1.5rem",
+          "card_background": "#222222",
+          "card_radius": "0.75rem",
+          "font_style": "serif"
+        },
+        "login_page": {
+          "centered_form": true,
+          "form_background": "transparent",
+          "input_style": "rounded",
+          "button_color": "#c50000",
+          "oauth_buttons": {
+            "Patreon": "#F96854",
+            "YouTube": "#FF0000"
+          },
+          "text_links": { "color": "#ffffff", "hover": "#c50000" }
+        }
+      }
+    },
+
+    "components": {
+      "buttons": {
+        "primary": {
+          "background": "#ffffff",
+          "color": "#000000",
+          "border_radius": "0.5rem",
+          "padding": "0.75rem 1.5rem",
+          "font_weight": "600",
+          "hover_opacity": 0.9
+        },
+        "secondary": {
+          "background": "transparent",
+          "border": "1px solid #ffffff",
+          "color": "#ffffff"
+        }
+      },
+
+      "cards": {
+        "media_card": {
+          "ratio": "16:9",
+          "border_radius": "0.5rem",
+          "hover_effect": "elevate",
+          "overlay_text": true,
+          "text_position": "bottom-left"
+        },
+        "account_card": {
+          "background": "#1f1f1f",
+          "border_radius": "0.75rem",
+          "padding": "1rem"
+        }
+      },
+
+      "modals": {
+        "background_blur": true,
+        "overlay_opacity": 0.8,
+        "corner_radius": "1rem",
+        "animation": "fade-in"
+      },
+
+      "inputs": {
+        "background": "#ffffff",
+        "border_radius": "0.5rem",
+        "padding": "0.75rem 1rem",
+        "font_size": "1rem",
+        "focus_border_color": "#c50000"
+      },
+
+      "navbar": {
+        "background": "transparent",
+        "text_color": "#ffffff",
+        "links_spacing": "2rem",
+        "alignment": "left",
+        "hover_color": "#c50000"
+      },
+
+      "footer": {
+        "background": "#000000",
+        "text_color": "#999999",
+        "padding": "1.5rem 2rem",
+        "alignment": "center"
+      }
+    },
+
+    "interaction_patterns": {
+      "hover": {
+        "card_hover": "slight scale-up, 1.02x",
+        "button_hover": "opacity 0.9"
+      },
+      "scroll_behavior": "smooth",
+      "modal_open_transition": "fade + scale",
+      "carousel": {
+        "scroll_snap": true,
+        "indicator_dots": true,
+        "arrow_navigation": true
+      }
+    },
+
+    "accessibility": {
+      "contrast_ratio": "AAA",
+      "font_scaling": true,
+      "keyboard_navigation": true,
+      "focus_outline": "#c50000"
+    },
+
+    "animation": {
+      "easing": "ease-in-out",
+      "duration_short": "200ms",
+      "duration_long": "400ms"
+    }
+  },
+
+  "structure": {
+    "routes": [
+      { "path": "/", "component": "HomePage" },
+      { "path": "/series/:id", "component": "SeriesModal" },
+      { "path": "/audio/:id", "component": "AudioModal" },
+      { "path": "/account", "component": "AccountSettings" },
+      { "path": "/login", "component": "LoginPage" }
+    ],
+    "state_management": {
+      "user": ["auth_state", "subscription_status", "linked_accounts"],
+      "media": ["watch_history", "play_state", "favorites"],
+      "ui": ["theme_mode", "modal_open", "hover_target"]
+    },
+    "api_integration": {
+      "video_host": "Mux",
+      "auth": ["YouTubeOAuth", "PatreonOAuth", "EmailLogin"],
+      "payments": ["Stripe"]
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+	"appId": "com.harmonywatch.app",
+	"appName": "Harmony",
+	"server": {
+		"url": "http://192.168.1.186:3000",
+		"cleartext": true
+	},
+	"ios": {
+		"scheme": "app",
+		"contentInset": "automatic",
+		"webContentsDebuggingEnabled": true
+	},
+	"android": {
+		"allowMixedContent": true
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 1500,
+			"launchAutoHide": true,
+			"backgroundColor": "#000000",
+			"showSpinner": false,
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP"
+		},
+		"StatusBar": {
+			"style": "dark",
+			"backgroundColor": "#000000"
+		},
+		"SignInWithApple": {
+			"clientId": "com.harmonywatch.app.web",
+			"scopes": [
+				"email",
+				"name"
+			]
+		}
+	},
+	"packageClassList": [
+		"SignInWithApple",
+		"SplashScreenPlugin",
+		"StatusBarPlugin",
+		"AudioPlayerPlugin",
+		"PurchasesPlugin",
+		"HarmonyPlayerPlugin"
+	]
+}

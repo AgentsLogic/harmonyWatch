@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.harmonywatch.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+  <name>Harmony</name>
+  <description>Harmony streaming experience packaged for iOS via VoltBuilder.</description>
+  <author email="support@harmonywatch.example" href="https://harmonywatch.example">HarmonyWatch Team</author>
+  <content src="index.html" />
+  <access origin="*" />
+  <allow-navigation href="*" />
+  <allow-intent href="*" />
+
+  <preference name="BackupWebStorage" value="none" />
+  <preference name="DisallowOverscroll" value="true" />
+  <preference name="ScrollEnabled" value="false" />
+  <preference name="StatusBarOverlaysWebView" value="false" />
+  <preference name="StatusBarStyle" value="lightcontent" />
+  <preference name="AutoHideSplashScreen" value="true" />
+  <preference name="SuppressesIncrementalRendering" value="true" />
+  <preference name="WKWebViewOnly" value="true" />
+  <preference name="CordovaWebViewEngine" value="CDVWKWebViewEngine" />
+
+  <feature name="CDVWKWebViewEngine">
+    <param name="ios-package" value="CDVWKWebViewEngine" />
+  </feature>
+
+  <plugin name="cordova-plugin-wkwebview-engine" />
+  <plugin name="cordova-plugin-media" />
+  <plugin name="cordova-plugin-background-mode" />
+  <plugin name="cordova-plugin-music-controls2" />
+  <plugin name="cordova-plugin-inappbrowser" />
+  <plugin name="cordova-plugin-splashscreen" />
+
+  <platform name="ios">
+    <preference name="CordovaWebViewEngine" value="CDVWKWebViewEngine" />
+    <preference name="WKWebViewOnly" value="true" />
+    <preference name="Scheme" value="app" />
+
+    <edit-config file="*-Info.plist" mode="merge" target="UIBackgroundModes">
+      <array>
+        <string>audio</string>
+        <string>fetch</string>
+      </array>
+    </edit-config>
+
+    <edit-config file="*-Info.plist" mode="merge" target="NSAppTransportSecurity">
+      <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true />
+        <key>NSAllowsLocalNetworking</key>
+        <true />
+      </dict>
+    </edit-config>
+
+    <edit-config file="*-Info.plist" mode="merge" target="NSMicrophoneUsageDescription">
+      <string>HarmonyWatch needs microphone access for interactive audio features.</string>
+    </edit-config>
+  </platform>
+</widget>
+
