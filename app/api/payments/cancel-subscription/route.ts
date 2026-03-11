@@ -116,13 +116,6 @@ export async function POST(request: NextRequest) {
 			const canceledSubscription = canceledSubscriptionResponse as Stripe.Subscription;
 			const sub = canceledSubscription as any;
 
-			console.log('[Stripe] Subscription canceled:', {
-				subscriptionId: canceledSubscription.id,
-				status: canceledSubscription.status,
-				cancel_at_period_end: sub.cancel_at_period_end,
-				current_period_end: sub.current_period_end,
-			});
-
 			// Update unified subscription table with canceled subscription status
 			const unifiedParams = stripeSubscriptionToUnifiedParams(canceledSubscription);
 			if (unifiedParams) {
@@ -199,18 +192,6 @@ export async function POST(request: NextRequest) {
 			const subscriber = revenueCatData.subscriber;
 			const entitlements = subscriber?.entitlements || {};
 			
-			// Log full subscriber structure for debugging (in development)
-			if (process.env.NODE_ENV === 'development') {
-				console.log('[Cancel Subscription] Full RevenueCat subscriber response:', JSON.stringify({
-					subscriber_keys: Object.keys(subscriber || {}),
-					entitlements: Object.keys(entitlements),
-					non_subscriptions: Object.keys(subscriber?.non_subscriptions || {}),
-					subscriptions: Object.keys(subscriber?.subscriptions || {}),
-					non_subscriptions_full: subscriber?.non_subscriptions,
-					subscriptions_full: subscriber?.subscriptions,
-				}, null, 2));
-			}
-			
 			// Find active entitlement
 			const now = new Date();
 			const activeEntitlement = Object.values(entitlements).find((ent: any) => {
@@ -268,20 +249,6 @@ export async function POST(request: NextRequest) {
 			                          latestTransactionStore === 'promotional' ||
 			                          latestTransactionStore === 'rc_billing' ||
 			                          (!hasIOSSubscription && !hasAndroidSubscription && (Object.keys(nonSubscriptions).length > 0 || Object.keys(subscriptions).length > 0));
-			
-			// Log for debugging
-			console.log('[Cancel Subscription] RevenueCat subscription detection:', {
-				has_non_subscriptions: Object.keys(nonSubscriptions).length > 0,
-				has_subscriptions: Object.keys(subscriptions).length > 0,
-				latest_transaction_store: latestTransactionStore,
-				found_web_in_non_subs: !!webSubInNonSubs,
-				found_web_in_subs: !!webSubInSubs,
-				has_ios_subscription: hasIOSSubscription,
-				has_android_subscription: hasAndroidSubscription,
-				is_web_subscription: isWebSubscription,
-				non_subscriptions_stores: Object.values(nonSubscriptions).map((sub: any) => sub.store),
-				subscriptions_stores: Object.values(subscriptions).map((sub: any) => sub.store),
-			});
 			
 			if (isWebSubscription) {
 				// This is a RevenueCat Web subscription - we can cancel it via API

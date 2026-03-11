@@ -135,7 +135,6 @@ export async function GET(request: NextRequest) {
 
     // Get user profile with user_type and profile fields using service role
     // Subscription details are read from subscriptions table only
-    console.log('[ME DEBUG v2] Step 1: Querying user_profiles for user_id:', user.id);
     const { data: profile, error: profileError } = await supabaseService
       .from('user_profiles')
       .select('user_type, display_name, avatar_url, bio, signup_status')
@@ -143,27 +142,10 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError) {
-      console.error('[ME DEBUG v2] Profile fetch error:', JSON.stringify(profileError));
-      
-      // Try raw fetch fallback to diagnose
-      try {
-        const rawUrl = `${publicConfig.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?user_id=eq.${user.id}&select=user_type,display_name,avatar_url,bio,signup_status`;
-        const rawResponse = await fetch(rawUrl, {
-          headers: {
-            'Authorization': `Bearer ${serverConfig.SUPABASE_SERVICE_ROLE_KEY}`,
-            'apikey': serverConfig.SUPABASE_SERVICE_ROLE_KEY,
-            'Accept': 'application/vnd.pgrst.object+json',
-          },
-        });
-        const rawBody = await rawResponse.text();
-        console.log('[ME DEBUG v2] Raw fetch result:', rawResponse.status, rawBody);
-      } catch (rawErr) {
-        console.error('[ME DEBUG v2] Raw fetch also failed:', rawErr);
-      }
+      console.error('Auth/me: failed to fetch user profile:', profileError);
 
       // If profile doesn't exist, create a default one
       if (profileError.code === 'PGRST116') {
-        console.log('Creating default profile for user:', user.id);
         const { data: newProfile, error: createError } = await supabaseService
           .from('user_profiles')
           .insert({
@@ -313,7 +295,6 @@ export async function GET(request: NextRequest) {
               console.warn('[Auth/me] Cache invalidation failed after sync (non-critical):', cacheError);
             }
             
-            console.log('[Auth/me] ✅ Auto-synced user subscription (expired subscription detected)');
           } catch (syncError) {
             // If sync fails, fall back to lightweight downgrade
             console.error('[Auth/me] Error in full sync, attempting lightweight downgrade:', syncError);
@@ -327,7 +308,6 @@ export async function GET(request: NextRequest) {
             
             if (!updateError) {
               profile.user_type = 'free';
-              console.log('[Auth/me] ✅ Fallback: Auto-downgraded user from subscriber to free');
             } else {
               console.error('[Auth/me] Error in fallback downgrade:', updateError);
             }

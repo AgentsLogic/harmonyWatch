@@ -251,12 +251,6 @@ export async function POST(
               
               await upsertSubscription(expiredParams);
               updatedCount++;
-              
-              console.log('[Sync Subscription] Updated expired Stripe subscription:', {
-                subscriptionId: expiredSub.id,
-                stripeStatus: expiredSub.status,
-                newDatabaseStatus: 'expired',
-              });
             } catch (updateError) {
               console.error('[Sync Subscription] Error updating expired subscription:', updateError);
             }
@@ -272,7 +266,6 @@ export async function POST(
             .in('status', ['active', 'trialing', 'past_due']);
 
           if (dbSubscriptions && dbSubscriptions.length > 0) {
-            console.log('[Sync Subscription] Found database Stripe subscriptions to expire:', dbSubscriptions.length);
             
             for (const dbSub of dbSubscriptions) {
               try {
@@ -287,12 +280,6 @@ export async function POST(
                 
                 if (!updateError) {
                   updatedCount++;
-                  console.log('[Sync Subscription] Expired database subscription:', {
-                    dbSubscriptionId: dbSub.id,
-                    externalId: dbSub.external_id,
-                    oldStatus: dbSub.status,
-                    newStatus: 'expired',
-                  });
                 } else {
                   console.error('[Sync Subscription] Error expiring database subscription:', updateError);
                 }
@@ -327,7 +314,6 @@ export async function POST(
           if (profileError) {
             console.error('[Sync Subscription] Error updating user profile:', profileError);
           } else {
-            console.log('[Sync Subscription] Directly updated user_type to free');
           }
 
           return NextResponse.json({
@@ -414,7 +400,6 @@ export async function POST(
 
             let rcExpiredCount = 0;
             if (rcDbSubscriptions && rcDbSubscriptions.length > 0) {
-              console.log('[Sync Subscription] No active RevenueCat entitlement found. Expiring database RevenueCat subscriptions:', rcDbSubscriptions.length);
               
               for (const dbSub of rcDbSubscriptions) {
                 try {
@@ -428,13 +413,6 @@ export async function POST(
                   
                   if (!updateError) {
                     rcExpiredCount++;
-                    console.log('[Sync Subscription] Expired RC database subscription:', {
-                      dbSubscriptionId: dbSub.id,
-                      provider: dbSub.provider,
-                      externalId: dbSub.external_id,
-                      oldStatus: dbSub.status,
-                      newStatus: 'expired',
-                    });
                   } else {
                     console.error('[Sync Subscription] Error expiring RC database subscription:', updateError);
                   }
@@ -479,7 +457,6 @@ export async function POST(
               if (profileError) {
                 console.error('[Sync Subscription] Error updating user profile:', profileError);
               } else {
-                console.log('[Sync Subscription] Directly updated user_type to free (no manual subscription)');
               }
             }
 
