@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
-
-// Initialize Supabase client with service role key for admin operations
-const supabase = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {

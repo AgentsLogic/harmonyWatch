@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
 import { assertStripeClient, planFromPriceId, epochSecondsToIso, stripeMetadataToRecord } from '@/lib/services/stripe';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase as supabaseAuth, supabaseAdmin } from '@/lib/supabase';
 import {
 	upsertSubscription,
 	syncUserRoleFromSubscriptions,
@@ -11,11 +9,6 @@ import {
 	type UpsertSubscriptionParams,
 } from '@/lib/services/subscription-service';
 import { revalidateTag } from 'next/cache';
-
-const supabaseAuth = createClient(
-	publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-	publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 /**
  * Convert Stripe subscription to unified subscription params

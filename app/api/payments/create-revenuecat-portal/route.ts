@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
-
-const supabaseAuth = createClient(
-	publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-	publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+import { serverConfig } from '@/lib/env';
+import { supabase as supabaseAuth } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
 	try {

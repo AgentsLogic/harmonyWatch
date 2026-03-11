@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { supabaseConfig } from '../../../../../lib/config';
+import { supabase as supabaseAuth, supabaseAdmin as supabaseService } from '@/lib/supabase';
 import { commentsService } from '../../../../../lib/services/comments';
-
-const supabaseAuth = createClient(
-  supabaseConfig.url,
-  supabaseConfig.anonKey
-);
-
-const supabaseService = createClient(
-  supabaseConfig.url,
-  supabaseConfig.serviceRoleKey
-);
 
 export async function GET(
   request: NextRequest,

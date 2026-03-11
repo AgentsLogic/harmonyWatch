@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase as supabaseAuth, supabaseAdmin } from '@/lib/supabase';
 import { checkSubscriptionAccess } from '@/lib/services/subscription-check';
-
-const supabaseAuth = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 /**
  * GET /api/content/premium-check?contentId=xxx&seriesId=xxx

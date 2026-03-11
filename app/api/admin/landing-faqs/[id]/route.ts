@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { checkAdminOrStaffAuth } from '@/lib/utils/admin-auth';
-
-// Initialize Supabase client with service role key for admin operations
-const supabase = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
 
 // PATCH - Update a landing page FAQ
 export async function PATCH(

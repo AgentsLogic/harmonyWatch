@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { upsertSubscription, syncUserRoleFromSubscriptions } from '@/lib/services/subscription-service';
 import { revenueCatEntitlementToUnifiedParams } from '@/app/api/webhooks/revenuecat/route';
-
-// Initialize Supabase client with service role key for database operations
-const supabase = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
 
 // Helper to get user from Supabase auth
 async function getUserFromAuth(request: NextRequest) {

@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { serverConfig } from '@/lib/env';
-
-// Initialize Supabase client with service role key for RLS bypass
-const supabase = createClient(
-  serverConfig.SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 
 // Helper to get user from Supabase auth
 async function getUserFromAuth(request: NextRequest) {

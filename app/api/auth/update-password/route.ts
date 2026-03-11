@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, supabaseAdmin as supabaseService } from '@/lib/supabase';
+import { supabase, supabaseAdmin as supabaseService, adminGetUserByEmail } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,11 +21,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user by email
-    // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
-    const { data: { users: allUsers }, error: lookupError } = await supabaseService.auth.admin.listUsers({ perPage: 1000 });
-    const user = (allUsers as any[] | null)?.find((u: any) => u.email === email) ?? null;
+    const user = await adminGetUserByEmail(email);
 
-    if (lookupError || !user) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }

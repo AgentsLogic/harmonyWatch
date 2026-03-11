@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
-
-// Initialize Supabase client with anon key for auth operations
-const supabaseAuth = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
-// Initialize Supabase client with service role key for database operations
-const supabaseService = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabase as supabaseAuth, supabaseAdmin as supabaseService } from '@/lib/supabase';
 
 // GET - Fetch user's recently viewed content
 export async function GET(request: NextRequest) {

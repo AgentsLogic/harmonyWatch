@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
-import { publicConfig, serverConfig } from '@/lib/env';
+import { serverConfig } from '@/lib/env';
 import {
 	assertStripeClient,
 	ensureStripeCustomer,
 	getPriceIdForPlan,
 } from '@/lib/services/stripe';
-
-const supabaseAuth = createClient(
-	publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-	publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+import { supabase as supabaseAuth } from '@/lib/supabase';
 
 type PlanOption = 'monthly' | 'yearly';
 
