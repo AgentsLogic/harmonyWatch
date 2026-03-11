@@ -185,12 +185,11 @@ async function findUserByAppUserIdOrEmail(
 
   if (email) {
     try {
-      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      if (!listError) {
-        const supabaseUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-        if (supabaseUser) {
-          return supabaseUser.id;
-        }
+      // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
+      const { data: { users: allUsers } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+      const supabaseUser = (allUsers as any[] | null)?.find((u: any) => u.email === email) ?? null;
+      if (supabaseUser) {
+        return supabaseUser.id;
       }
     } catch (emailLookupError) {
       console.error('[RevenueCat Webhook] Error during email lookup:', emailLookupError);
@@ -300,13 +299,13 @@ async function updateUserSubscriptionStatus(
         
         try {
           // Find Supabase user by email
-          const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-          
+          // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
+          const { data: { users: allUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+          const supabaseUser = (allUsers as any[] | null)?.find((u: any) => u.email === email) ?? null;
+
           if (listError) {
-            console.error('[RevenueCat Webhook] Error listing users:', listError);
+            console.error('[RevenueCat Webhook] Error looking up user by email:', listError);
           } else {
-            const supabaseUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-            
             if (supabaseUser) {
               console.log('[RevenueCat Webhook] Found Supabase user by email:', supabaseUser.id);
               // Update the appUserID to the correct Supabase user_id
@@ -352,10 +351,7 @@ async function updateUserSubscriptionStatus(
               });
               return;
             } else {
-              console.error('[RevenueCat Webhook] Supabase user not found for email:', email, {
-                total_users: users.length,
-                searched_emails: users.map(u => u.email).slice(0, 5), // Log first 5 for debugging
-              });
+              console.error('[RevenueCat Webhook] Supabase user not found for email:', email);
             }
           }
         } catch (emailLookupError) {

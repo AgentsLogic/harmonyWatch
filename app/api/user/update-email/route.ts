@@ -49,18 +49,10 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if email is already in use by another user
-    const { data: { users }, error: listError } = await supabaseService.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error('Error listing users:', listError);
-      return NextResponse.json(
-        { error: 'Failed to check email availability' },
-        { status: 500 }
-      );
-    }
-
-    const emailInUse = users.find(u => u.id !== user.id && u.email?.toLowerCase() === email.trim().toLowerCase());
-    if (emailInUse) {
+    // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
+    const { data: { users: allUsers } } = await supabaseService.auth.admin.listUsers({ perPage: 1000 });
+    const existingUserWithEmail = (allUsers as any[] | null)?.find((u: any) => u.email === email.trim()) ?? null;
+    if (existingUserWithEmail && existingUserWithEmail.id !== user.id) {
       return NextResponse.json(
         { error: 'Email is already in use by another account' },
         { status: 400 }

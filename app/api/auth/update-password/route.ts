@@ -28,19 +28,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user by email
-    const { data: { users }, error: listError } = await supabaseService.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error('Error listing users:', listError);
-      return NextResponse.json(
-        { error: 'Failed to find user' },
-        { status: 500 }
-      );
-    }
+    // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
+    const { data: { users: allUsers }, error: lookupError } = await supabaseService.auth.admin.listUsers({ perPage: 1000 });
+    const user = (allUsers as any[] | null)?.find((u: any) => u.email === email) ?? null;
 
-    const user = users.find(u => u.email === email);
-
-    if (!user) {
+    if (lookupError || !user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
