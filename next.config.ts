@@ -127,11 +127,13 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
+              // 'unsafe-eval' is required by Ionic/Stencil for dynamic component loading at runtime
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://*.stripe.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://*.mux.com https://inferred.litix.io https://api.stripe.com https://*.stripe.com https://api.revenuecat.com https://*.revenuecat.com https://e.revenuecat.com https://*.revenue.cat https://e.revenue.cat http://localhost:* http://127.0.0.1:*",
+              // localhost entries intentionally excluded — this header only applies in production
+              "connect-src 'self' https://*.supabase.co https://*.mux.com https://inferred.litix.io https://api.stripe.com https://*.stripe.com https://api.revenuecat.com https://*.revenuecat.com https://e.revenuecat.com https://*.revenue.cat https://e.revenue.cat",
               "media-src 'self' https://*.mux.com blob:",
               "frame-src 'self' https://*.mux.com https://js.stripe.com https://hooks.stripe.com capacitor:// ionic:",
               "object-src 'none'",
