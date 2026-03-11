@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
-import { publicConfig, serverConfig } from '@/lib/env';
 import { isActiveSubscriptionStatus, planFromPriceId, assertStripeClient, epochSecondsToIso } from '@/lib/services/stripe';
 import { checkSubscriptionAccess } from '@/lib/services/subscription-check';
 import { syncUserRoleFromSubscriptions } from '@/lib/services/subscription-service';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase as supabaseAuth, supabaseAdmin as supabaseService } from '@/lib/supabase';
 import type { UserSubscription } from '@/app/contexts/user-context';
-
-// Initialize Supabase client with anon key for auth operations
-const supabaseAuth = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
-// Initialize Supabase client with service role key for database operations
-const supabaseService = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
 
 // Helper function to set auth cookies
 function setAuthCookies(response: NextResponse, accessToken: string, refreshToken?: string) {

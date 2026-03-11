@@ -1,12 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
-
-// Initialize Supabase client with service role key for admin operations
-const supabase = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 
 /**
  * Verify that the user is an admin (for user management and sensitive operations)
@@ -66,6 +59,44 @@ export async function verifyAdminOrStaff(request: NextRequest) {
   }
 
   return { error: null, status: 200, user, userType: profile.user_type };
+}
+
+/**
+ * Verify admin access, accepting both Bearer token (Authorization header) and cookie.
+ * Use for endpoints that may be called server-side with explicit Bearer tokens.
+ */
+export async function verifyAdminBearer(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : request.cookies.get('sb-access-token')?.value ?? null;
+
+    if (!accessToken) {
+      return { error: 'Not authenticated', status: 401, user: null };
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+
+    if (authError || !user) {
+      return { error: 'Invalid session', status: 401, user: null };
+    }
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('user_type')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profile?.user_type !== 'admin') {
+      return { error: 'Forbidden: Admin access required', status: 403, user: null };
+    }
+
+    return { error: null, status: 200, user };
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    return { error: 'Internal server error', status: 500, user: null };
+  }
 }
 
 /**

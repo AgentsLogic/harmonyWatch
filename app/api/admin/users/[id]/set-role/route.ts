@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { verifyAdmin } from '@/lib/utils/admin-auth';
-
-// Initialize Supabase client with service role key for admin operations
-const supabase = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
 
 // PATCH - Update user role (set/remove staff)
 export async function PATCH(

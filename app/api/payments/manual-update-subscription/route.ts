@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 	} catch (error) {
 		console.error('[Stripe] Failed to manually update subscription', error);
 		return NextResponse.json(
-			{ error: 'Unable to update subscription', details: error instanceof Error ? error.message : 'Unknown error' },
+			{ error: 'Unable to update subscription'},
 			{ status: 500 }
 		);
 	}

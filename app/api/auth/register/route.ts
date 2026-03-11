@@ -1,24 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
+import { supabase, supabaseAdmin as supabaseService } from '@/lib/supabase';
 import { rateLimit, getClientIp } from '@/lib/utils/rate-limit';
-
-// Initialize Supabase clients
-const supabase = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
-const supabaseService = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  }
-);
 
 export async function POST(request: NextRequest) {
   try {

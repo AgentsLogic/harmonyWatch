@@ -140,8 +140,7 @@ export async function POST(request: NextRequest) {
 			console.error('[Debug Restore] Failed to fetch subscriber:', revenueCatResponse?.status);
 			return NextResponse.json(
 				{ 
-					success: false,
-					message: 'Unable to access RevenueCat subscription details. The subscription might be under an anonymous ID. Try manually transferring it in RevenueCat dashboard.',
+					error: 'Unable to access RevenueCat subscription details. The subscription might be under an anonymous ID. Try manually transferring it in RevenueCat dashboard.',
 					hasActiveSubscription: false,
 					suggestion: 'In RevenueCat dashboard, find the subscription by email and transfer it to user ID: ' + user.id
 				},
@@ -173,8 +172,7 @@ export async function POST(request: NextRequest) {
 				Object.keys(subscriber?.non_subscriptions || {}).length > 0;
 			
 			return NextResponse.json({
-				success: false,
-				message: subscriberExists && !hasSubscriptions
+				error: subscriberExists && !hasSubscriptions
 					? `No active subscription found. The subscription might be under an anonymous RevenueCat ID (like $RCAnonymousID:...). To fix this, go to RevenueCat Dashboard → Customers → Find customer by email (${user.email}) → Transfer subscription to user ID: ${user.id}`
 					: 'No active subscription found in RevenueCat for this user ID.',
 				hasActiveSubscription: false,

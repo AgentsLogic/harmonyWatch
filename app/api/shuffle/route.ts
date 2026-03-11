@@ -24,7 +24,7 @@ export async function GET() {
     if (error) {
       console.error('[API] Error fetching videos for shuffle:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch videos', details: error.message },
+        { error: 'Failed to fetch videos'},
         { status: 500 }
       );
     }

@@ -23,14 +23,13 @@ export async function GET(request: NextRequest) {
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
         return NextResponse.json(
           { 
-            error: 'Database table not found. Please run the migration: database-migrations/add-mobile-landing-slideshow.sql',
-            details: error.message 
+            error: 'Database table not found. Please run the migration: database-migrations/add-mobile-landing-slideshow.sql'
           },
           { status: 500 }
         );
       }
       return NextResponse.json(
-        { error: 'Failed to fetch images', details: error.message },
+        { error: 'Failed to fetch images'},
         { status: 500 }
       );
     }

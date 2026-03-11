@@ -53,7 +53,7 @@ export async function PATCH(
     if (error) {
       console.error('Error updating mobile landing slideshow image:', error);
       return NextResponse.json(
-        { error: 'Failed to update image', details: error.message },
+        { error: 'Failed to update image'},
         { status: 500 }
       );
     }

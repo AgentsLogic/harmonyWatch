@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
-
-// Initialize Supabase client with service role key for database operations
-const supabaseService = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabase, supabaseAdmin as supabaseService } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,11 +70,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Sign the user in with the new password to establish a session
-    const supabase = createClient(
-      publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-      publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
-
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
