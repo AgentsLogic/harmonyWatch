@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
-import { supabaseAdmin } from '@/lib/supabase';
+import { serverConfig } from '@/lib/env';
+import { supabase as supabaseAuth, supabaseAdmin } from '@/lib/supabase';
 import { upsertSubscription, syncUserRoleFromSubscriptions } from '@/lib/services/subscription-service';
 import { revenueCatEntitlementToUnifiedParams } from '@/app/api/webhooks/revenuecat/route';
 
-const supabaseAuth = createClient(
-	publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-	publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 /**
  * POST /api/payments/debug-restore-subscription
