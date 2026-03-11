@@ -16,12 +16,7 @@ function verifyRevenueCatAuthorization(req: NextRequest): boolean {
   
   const expectedAuthRaw = serverConfig.REVENUECAT_WEBHOOK_SECRET;
   if (!expectedAuthRaw) {
-    console.warn('[RevenueCat Webhook] Authorization header value not configured');
-    // In development, allow without authorization (not recommended for production)
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[RevenueCat Webhook] Development mode: skipping authorization verification');
-      return true;
-    }
+    console.error('[RevenueCat Webhook] REVENUECAT_WEBHOOK_SECRET is not configured — rejecting request');
     return false;
   }
 

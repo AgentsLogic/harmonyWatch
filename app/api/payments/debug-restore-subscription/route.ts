@@ -17,9 +17,7 @@ const supabaseAuth = createClient(
  */
 export async function POST(request: NextRequest) {
 	try {
-		// Only allow in development or for admins
-		const isDevelopment = process.env.NODE_ENV === 'development';
-		
+		// Require admin auth unconditionally
 		const accessToken = request.cookies.get('sb-access-token')?.value;
 		if (!accessToken) {
 			return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -34,17 +32,14 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
 		}
 
-		// Check if user is admin (if not in development)
-		if (!isDevelopment) {
-			const { data: profile } = await supabaseAdmin
-				.from('user_profiles')
-				.select('user_type')
-				.eq('user_id', user.id)
-				.single();
+		const { data: profile } = await supabaseAdmin
+			.from('user_profiles')
+			.select('user_type')
+			.eq('user_id', user.id)
+			.single();
 
-			if (profile?.user_type !== 'admin') {
-				return NextResponse.json({ error: 'Unauthorized - Admin only' }, { status: 403 });
-			}
+		if (profile?.user_type !== 'admin') {
+			return NextResponse.json({ error: 'Unauthorized - Admin only' }, { status: 403 });
 		}
 
 		// Query RevenueCat API to check subscription status
