@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { publicConfig, serverConfig } from '@/lib/env';
+import { verifyAdmin } from '@/lib/utils/admin-auth';
 
 // Initialize Supabase client with service role key for admin operations
 const supabase = createClient(
@@ -13,33 +14,6 @@ const supabase = createClient(
     }
   }
 );
-
-// Helper to verify admin access
-async function verifyAdmin(request: NextRequest) {
-  const accessToken = request.cookies.get('sb-access-token')?.value;
-  
-  if (!accessToken) {
-    return { error: 'No access token found', status: 401, user: null };
-  }
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-  
-  if (authError || !user) {
-    return { error: 'Invalid or expired token', status: 401, user: null };
-  }
-
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('user_type')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!profile || profile.user_type !== 'admin') {
-    return { error: 'Unauthorized - Admin access required', status: 403, user: null };
-  }
-
-  return { error: null, status: 200, user };
-}
 
 // DELETE - Delete a user
 export async function DELETE(

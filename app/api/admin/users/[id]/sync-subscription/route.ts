@@ -8,57 +8,24 @@ import {
 	type UpsertSubscriptionParams,
 } from '@/lib/services/subscription-service';
 import { serverConfig } from '@/lib/env';
+import { verifyAdminBearer } from '@/lib/utils/admin-auth';
 
 /**
  * Admin endpoint to sync a user's subscription status from Stripe or RevenueCat
  * POST /api/admin/users/[id]/sync-subscription
- * 
+ *
  * This attempts to sync from:
  * 1. Stripe (if user has Stripe customer record)
  * 2. RevenueCat (if user has RevenueCat subscription)
  * 3. Falls back to syncing user role from existing database subscriptions
  */
-async function verifyAdmin(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    const accessToken = authHeader?.startsWith('Bearer ') 
-      ? authHeader.substring(7)
-      : request.cookies.get('sb-access-token')?.value ?? null;
-
-    if (!accessToken) {
-      return { error: 'Not authenticated', status: 401, user: null };
-    }
-
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(accessToken);
-
-    if (authError || !user) {
-      return { error: 'Invalid session', status: 401, user: null };
-    }
-
-    // Check if user is admin
-    const { data: profile } = await supabaseAdmin
-      .from('user_profiles')
-      .select('user_type')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profile?.user_type !== 'admin') {
-      return { error: 'Forbidden: Admin access required', status: 403, user: null };
-    }
-
-    return { error: null, status: 200, user };
-  } catch (error) {
-    console.error('Admin verification error:', error);
-    return { error: 'Internal server error', status: 500, user: null };
-  }
-}
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const adminCheck = await verifyAdmin(request);
+    const adminCheck = await verifyAdminBearer(request);
     if (adminCheck.error) {
       return NextResponse.json(
         { error: adminCheck.error },
