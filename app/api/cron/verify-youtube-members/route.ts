@@ -15,12 +15,7 @@ function verifyCronSecret(request: NextRequest): boolean {
   const expectedSecret = serverConfig.CRON_SECRET;
 
   if (!expectedSecret) {
-    console.warn('[YouTube Cron] CRON_SECRET not configured');
-    // In development, allow without secret (not recommended for production)
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[YouTube Cron] Development mode: skipping secret verification');
-      return true;
-    }
+    console.error('[YouTube Cron] CRON_SECRET is not configured — rejecting request');
     return false;
   }
 

@@ -23,12 +23,7 @@ function verifyWebhookSignature(
 
   const secret = serverConfig.PATREON_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn('[Patreon Webhook] Webhook secret not configured');
-    // In development, allow without signature (not recommended for production)
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[Patreon Webhook] Development mode: skipping signature verification');
-      return true;
-    }
+    console.error('[Patreon Webhook] PATREON_WEBHOOK_SECRET is not configured — rejecting request');
     return false;
   }
 

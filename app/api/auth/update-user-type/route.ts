@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const { userType } = await request.json();
 
     // Validate user type
-    if (!userType || !['free', 'subscriber', 'admin'].includes(userType)) {
+    if (!userType || !['free', 'subscriber'].includes(userType)) {
       return NextResponse.json(
         { error: 'Invalid user type' },
         { status: 400 }
