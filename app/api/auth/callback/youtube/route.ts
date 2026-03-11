@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
+import { supabase, supabaseAdmin as supabaseService } from '@/lib/supabase';
+import { serverConfig } from '@/lib/env';
 import {
   exchangeYouTubeCode,
   getYouTubeChannelId,
@@ -8,16 +8,6 @@ import {
   filterByMemberChannelId,
 } from '@/lib/services/youtube-membership';
 import { upsertSubscription, syncUserRoleFromSubscriptions } from '@/lib/services/subscription-service';
-
-const supabase = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
-const supabaseService = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
 
 /**
  * GET /api/auth/callback/youtube
