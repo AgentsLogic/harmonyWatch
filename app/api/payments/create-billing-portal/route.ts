@@ -68,11 +68,6 @@ export async function POST(request: NextRequest) {
 			return_url: `${baseUrl}/settings`,
 		});
 
-		console.log('[Stripe Billing Portal] Created portal session:', {
-			sessionId: portalSession.id,
-			url: portalSession.url,
-			customerId: stripeCustomerId,
-		});
 
 		if (!portalSession.url) {
 			return NextResponse.json(

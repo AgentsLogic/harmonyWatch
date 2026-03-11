@@ -21,7 +21,6 @@ function isPlanOption(value: string): value is PlanOption {
 
 export async function POST(request: NextRequest) {
 	try {
-		console.log('[Stripe] create-checkout-session API called');
 		
 		// Get access token from multiple sources
 		const authHeader = request.headers.get('authorization');
@@ -90,7 +89,6 @@ export async function POST(request: NextRequest) {
 		);
 
 		if (existingActive) {
-			console.log('[Stripe] User already has active subscription:', existingActive.id);
 			return NextResponse.json({ 
 				error: 'You already have an active subscription. Please use the billing portal to manage it.' 
 			}, { status: 400 });
@@ -136,10 +134,6 @@ export async function POST(request: NextRequest) {
 			},
 		});
 
-		console.log('[Stripe] Checkout Session created:', {
-			sessionId: session.id,
-			url: session.url,
-		});
 
 		// Return the session URL for redirect
 		if (!session.url) {

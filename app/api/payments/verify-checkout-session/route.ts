@@ -139,12 +139,6 @@ export async function GET(request: NextRequest) {
 							// Uses non-cached getActiveSubscription() for immediate consistency
 							await syncUserRoleFromSubscriptions(userId);
 							
-							console.log('[Verify Checkout] ✅ Subscription activated immediately:', {
-								userId,
-								subscriptionId: subscription.id,
-								plan: upserted.plan,
-								status: upserted.status,
-							});
 						} else {
 							console.error('[Verify Checkout] ❌ Failed to convert subscription to unified format:', {
 								subscriptionId: subscription.id,

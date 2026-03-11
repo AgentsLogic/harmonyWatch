@@ -78,15 +78,6 @@ export async function POST(request: NextRequest) {
       const email = user.email || emailFromRequest || user.user_metadata?.email || user.user_metadata?.email_address;
       
       // Log what we have for debugging
-      console.log('[Create Profile] User data:', {
-        email: user.email,
-        metadata_email: user.user_metadata?.email,
-        user_metadata: user.user_metadata,
-        has_full_name: !!user.user_metadata?.full_name,
-        has_name: !!user.user_metadata?.name,
-        final_email: email,
-        fullNameFromRequest: fullNameFromRequest,
-      });
       
       // Extract display name with proper fallback
       // Priority: fullNameFromRequest > user_metadata.full_name > user_metadata.name > email prefix
@@ -106,7 +97,6 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      console.log('[Create Profile] Extracted display_name:', fullName);
 
       // If isSignupFlow is true, user is going to payment page - set status to 'pending'
       // Otherwise, user is logging in - set status to 'complete'
@@ -167,13 +157,11 @@ export async function POST(request: NextRequest) {
       }
       
       if (fullName) {
-        console.log('[Update Profile] Updating display_name to:', fullName);
         await supabaseService
           .from('user_profiles')
           .update({ display_name: fullName })
           .eq('user_id', user.id);
       } else {
-        console.log('[Update Profile] Could not extract display_name, email:', email, 'fullNameFromRequest:', fullNameFromRequest, 'user_metadata:', user.user_metadata);
       }
     }
 

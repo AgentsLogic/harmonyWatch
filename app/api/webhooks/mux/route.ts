@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
     const body = JSON.parse(rawBody);
-    console.log('Mux webhook received:', body);
 
     const { type, data } = body;
 
@@ -42,7 +41,6 @@ export async function POST(request: NextRequest) {
         // Store the mapping between upload_id and asset_id
         if (data.upload_id && data.asset_id) {
           uploadToAssetMap.set(data.upload_id, data.asset_id);
-          console.log(`[Webhook] Stored mapping: upload_id ${data.upload_id} -> asset_id ${data.asset_id}`);
           
           // Try to find and update pending content items that don't have an upload_id yet
           // Look for pending items created in the last 2 hours (to account for slow uploads)
@@ -59,13 +57,11 @@ export async function POST(request: NextRequest) {
             .limit(10); // Limit to most recent 10 to avoid matching wrong items
           
           if (!pendingError && pendingItems && pendingItems.length > 0) {
-            console.log(`[Webhook] Found ${pendingItems.length} pending content items without upload_id, attempting to match...`);
             
             // Update the most recently created pending item (most likely to be the one that just uploaded)
             // In the future, we could match by filename if Mux provides it in the webhook
             const mostRecentPending = pendingItems[0];
             
-            console.log(`[Webhook] Updating pending content item ${mostRecentPending.id} (${mostRecentPending.title}) with upload_id ${data.upload_id}`);
             
             const { error: updateError } = await supabaseAdmin
               .from('content_items')
@@ -78,7 +74,6 @@ export async function POST(request: NextRequest) {
             if (updateError) {
               console.error(`[Webhook] Error updating pending content item ${mostRecentPending.id}:`, updateError);
             } else {
-              console.log(`[Webhook] Successfully updated pending content item ${mostRecentPending.id} with upload_id ${data.upload_id}`);
             }
           }
         }
@@ -87,7 +82,6 @@ export async function POST(request: NextRequest) {
       case 'video.asset.ready':
         // Asset is ready for playback
         if (data.id) {
-          console.log(`Asset ${data.id} is ready for playback`);
           
           // Get duration from Mux asset data (in seconds)
           const durationSeconds = data.duration || null;
@@ -98,7 +92,6 @@ export async function POST(request: NextRequest) {
             const minutes = Math.floor(durationSeconds / 60);
             const seconds = Math.floor(durationSeconds % 60);
             durationFormatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            console.log(`Calculated duration: ${durationFormatted} (${durationSeconds} seconds)`);
           }
           
           // Try to find upload_id from the mapping or from asset data
@@ -152,7 +145,6 @@ export async function POST(request: NextRequest) {
 
           // Fallback: If still not found, query all processing items and check their upload_ids
           if ((!contentItems || contentItems.length === 0) && !error) {
-            console.log(`[Webhook] Content not found by upload_id or asset_id, checking all processing items...`);
             const { data: processingItems, error: processingError } = await supabaseAdmin
               .from('content_items')
               .select('id, mux_upload_id, mux_asset_id')
@@ -160,7 +152,6 @@ export async function POST(request: NextRequest) {
               .not('mux_upload_id', 'is', null);
 
             if (!processingError && processingItems && processingItems.length > 0) {
-              console.log(`[Webhook] Found ${processingItems.length} processing items, checking upload_ids...`);
               
               // Check each processing item's upload_id against Mux
               for (const item of processingItems) {
@@ -169,7 +160,6 @@ export async function POST(request: NextRequest) {
                 try {
                   const uploadDetails = await muxVideoService.getUploadDetails(item.mux_upload_id);
                   if (uploadDetails.success && uploadDetails.assetId === data.id) {
-                    console.log(`[Webhook] Found matching content item via upload_id lookup: ${item.id}`);
                     contentItems = [item];
                     break;
                   }
@@ -199,10 +189,8 @@ export async function POST(request: NextRequest) {
             if (updateError) {
               console.error('Error updating content item:', updateError);
             } else {
-              console.log(`Updated content item ${contentItem.id} with asset details and duration: ${durationFormatted}`);
             }
           } else {
-            console.log(`No content item found for asset ${data.id} (upload_id: ${uploadId})`);
           }
         }
         break;
@@ -210,7 +198,6 @@ export async function POST(request: NextRequest) {
       case 'video.asset.errored':
         // Asset processing failed
         if (data.id) {
-          console.log(`Asset ${data.id} processing failed`);
           
           // Update content item status to errored
           const { error } = await supabaseAdmin
@@ -225,7 +212,6 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log(`Unhandled webhook event type: ${type}`);
     }
 
     return NextResponse.json({ received: true });

@@ -7,12 +7,10 @@ const uploadToAssetMap = new Map<string, string>();
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Mux audio upload API called (create upload URL)');
     
     // Create direct upload URL
     const uploadResult = await muxVideoService.createDirectUpload('audio.mp3', 'unknown');
     
-    console.log('Upload result:', uploadResult);
     
     if (!uploadResult.success || !uploadResult.uploadId || !uploadResult.uploadUrl) {
       console.error('Upload creation failed:', uploadResult);
@@ -27,11 +25,6 @@ export async function POST(request: NextRequest) {
       uploadToAssetMap.set(uploadResult.uploadId, 'pending');
     }
 
-    console.log('Upload result:', {
-      success: uploadResult.success,
-      uploadId: uploadResult.uploadId,
-      assetId: uploadResult.assetId
-    });
 
     // Return the upload URL as plain text (MuxUploaderDrop expects this)
     return new NextResponse(uploadResult.uploadUrl, {
@@ -73,18 +66,15 @@ export async function GET(request: NextRequest) {
 
     // If assetId is provided, get asset details directly
     if (assetId) {
-      console.log(`[Mux API] Getting asset details for assetId: ${assetId}`);
       const assetDetails = await muxVideoService.getAssetDetails(assetId);
       
       if (!assetDetails) {
-        console.log(`[Mux API] Failed to get asset details for assetId: ${assetId}`);
         return NextResponse.json(
           { error: 'Failed to retrieve asset details' },
           { status: 500 }
         );
       }
 
-      console.log(`[Mux API] Asset status: ${assetDetails.status}`);
 
       // Format duration as MM:SS
       let durationFormatted: string | null = null;
@@ -105,22 +95,18 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log(`[Mux API] Checking status for uploadId: ${uploadId}`);
 
     // Try to get asset_id from our mapping first
     let mappedAssetId = uploadToAssetMap.get(uploadId!);
     
     if (!mappedAssetId || mappedAssetId === 'pending') {
       // Try to get asset_id directly from Mux upload details
-      console.log(`[Mux API] Upload not in map, checking Mux for uploadId: ${uploadId}`);
       const uploadDetails = await muxVideoService.getUploadDetails(uploadId!);
       
       if (uploadDetails.success && uploadDetails.assetId) {
         mappedAssetId = uploadDetails.assetId;
         uploadToAssetMap.set(uploadId!, mappedAssetId);
-        console.log(`[Mux API] Found assetId from Mux: ${mappedAssetId}`);
       } else {
-        console.log(`[Mux API] No assetId found yet for uploadId: ${uploadId}`);
         // Upload is still processing, no asset created yet
         return NextResponse.json({
           uploadId,
@@ -131,7 +117,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (!mappedAssetId || mappedAssetId === 'pending') {
-      console.log(`[Mux API] No assetId available for uploadId: ${uploadId}`);
       return NextResponse.json({
         uploadId,
         status: 'processing',
@@ -140,18 +125,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Get asset details
-    console.log(`[Mux API] Getting asset details for assetId: ${mappedAssetId}`);
     const assetDetails = await muxVideoService.getAssetDetails(mappedAssetId);
     
     if (!assetDetails) {
-      console.log(`[Mux API] Failed to get asset details for assetId: ${mappedAssetId}`);
       return NextResponse.json(
         { error: 'Failed to retrieve asset details' },
         { status: 500 }
       );
     }
 
-    console.log(`[Mux API] Asset status: ${assetDetails.status}`);
 
     // Format duration as MM:SS
     let durationFormatted: string | null = null;

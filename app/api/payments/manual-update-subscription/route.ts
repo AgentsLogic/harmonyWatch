@@ -89,10 +89,6 @@ export async function POST(request: NextRequest) {
 		const userUpdated = shouldBeSubscriber;
 		
 		if (shouldBeSubscriber) {
-			console.log('[Stripe] Successfully updated user to subscriber:', userId, {
-				plan: subscriptionPlan,
-				expiresAt: params.expires_at,
-			});
 		}
 
 		return NextResponse.json({
