@@ -6,8 +6,9 @@ import {
   calculatePatreonExpiresAt,
 } from '@/lib/services/patreon-membership';
 import {
-  upsertSubscription,
+  batchUpsertSubscriptions,
   syncUserRoleFromSubscriptions,
+  type UpsertSubscriptionParams,
 } from '@/lib/services/subscription-service';
 
 /**
@@ -84,10 +85,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all active linked Patreon accounts
+    // Get all active linked Patreon accounts (include external_email for email-fallback matching)
     const { data: linkedAccounts, error: fetchError } = await supabaseAdmin
       .from('linked_accounts')
-      .select('user_id, external_user_id, metadata')
+      .select('user_id, external_user_id, external_email, metadata')
       .eq('platform', 'patreon')
       .eq('status', 'active');
 
@@ -153,7 +154,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Process each linked account
+    // Pre-fetch all existing Patreon subscriptions for these users in one query
+    const userIds = linkedAccounts.map((a) => a.user_id);
+    const { data: existingSubs } = await supabaseAdmin
+      .from('subscriptions')
+      .select('user_id, external_id, status')
+      .in('user_id', userIds)
+      .eq('provider', 'patreon');
+
+    // Build map: `${userId}:${externalId}` → existing status
+    const existingSubMap = new Map<string, string>();
+    for (const sub of existingSubs || []) {
+      existingSubMap.set(`${sub.user_id}:${sub.external_id}`, sub.status);
+    }
+
+    // Build batch arrays — no DB calls inside the loop
+    const subscriptionUpserts: UpsertSubscriptionParams[] = [];
+    const linkedAccountUpdates: Array<{ userId: string; data: object }> = [];
+    const changedUserIds = new Set<string>();
+
     let activeCount = 0;
     let expiredCount = 0;
     let notFoundCount = 0;
@@ -162,69 +181,45 @@ export async function GET(request: NextRequest) {
       const patreonUserId = account.external_user_id;
       const userId = account.user_id;
 
-      // Try to find member by Patreon user ID (primary) or email (fallback)
+      // Try to find member by Patreon user ID (primary) or email (fallback).
+      // Email comes from external_email column or metadata — no extra DB call needed.
       let member = memberMap.get(patreonUserId);
-      
-      // Fallback to email matching if user ID match failed
       if (!member) {
-        const accountEmail = account.metadata?.email?.toLowerCase() || 
-                           (await supabaseAdmin
-                             .from('linked_accounts')
-                             .select('external_email')
-                             .eq('user_id', userId)
-                             .eq('platform', 'patreon')
-                             .single()).data?.external_email?.toLowerCase();
-        
+        const accountEmail =
+          (account as any).external_email?.toLowerCase() ||
+          account.metadata?.email?.toLowerCase();
         if (accountEmail) {
           member = memberMap.get(accountEmail);
         }
       }
 
       if (!member) {
-        // Member not found in campaign - check if subscription should be expired
-        // This could mean they canceled or were removed
         notFoundCount++;
-
-        // Check current subscription status
-        const { data: currentSub } = await supabaseAdmin
-          .from('subscriptions')
-          .select('status, expires_at')
-          .eq('user_id', userId)
-          .eq('provider', 'patreon')
-          .eq('external_id', patreonUserId)
-          .maybeSingle();
-
-        if (currentSub && currentSub.status !== 'expired') {
-          // Member is no longer in campaign - expire subscription
-          await upsertSubscription({
+        const existingStatus = existingSubMap.get(`${userId}:${patreonUserId}`);
+        if (existingStatus && existingStatus !== 'expired') {
+          subscriptionUpserts.push({
             user_id: userId,
             provider: 'patreon',
             external_id: patreonUserId,
             status: 'expired',
-            plan: 'monthly', // Default, will be updated if we have metadata
-            provider_data: {
-              patron_status: null,
-            },
+            plan: 'monthly',
+            provider_data: { patron_status: null },
           });
-
-          // Sync user role
-          await syncUserRoleFromSubscriptions(userId);
+          changedUserIds.add(userId);
           expiredCount++;
         }
         continue;
       }
 
-      // Member found - update subscription based on patron_status
       const { status, expiresAt } = mapPatronStatusToSubscriptionStatus(
         member.patron_status,
         member.next_charge_date,
         member.last_charge_date,
         member.pledge_cadence
       );
-
       const plan = member.pledge_cadence === 12 ? 'yearly' : 'monthly';
 
-      await upsertSubscription({
+      subscriptionUpserts.push({
         user_id: userId,
         provider: 'patreon',
         external_id: patreonUserId,
@@ -243,10 +238,9 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      // Update linked account metadata
-      await supabaseAdmin
-        .from('linked_accounts')
-        .update({
+      linkedAccountUpdates.push({
+        userId,
+        data: {
           metadata: {
             patron_status: member.patron_status,
             pledge_cadence: member.pledge_cadence,
@@ -254,18 +248,43 @@ export async function GET(request: NextRequest) {
           },
           last_verified_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId)
-        .eq('platform', 'patreon');
+        },
+      });
 
-      // Sync user role
-      await syncUserRoleFromSubscriptions(userId);
+      // Only sync role for users whose subscription status actually changed
+      const existingStatus = existingSubMap.get(`${userId}:${patreonUserId}`);
+      if (existingStatus !== status) {
+        changedUserIds.add(userId);
+      }
 
       if (status === 'active' || status === 'past_due' || (status === 'canceled' && expiresAt)) {
         activeCount++;
       } else {
         expiredCount++;
       }
+    }
+
+    // 1. Batch upsert all subscription changes in a single DB call
+    await batchUpsertSubscriptions(subscriptionUpserts);
+
+    // 2. Update linked account metadata in parallel (different data per row)
+    if (linkedAccountUpdates.length > 0) {
+      await Promise.all(
+        linkedAccountUpdates.map(({ userId, data }) =>
+          supabaseAdmin
+            .from('linked_accounts')
+            .update(data)
+            .eq('user_id', userId)
+            .eq('platform', 'patreon')
+        )
+      );
+    }
+
+    // 3. Sync user roles only for users whose status actually changed
+    if (changedUserIds.size > 0) {
+      await Promise.all(
+        Array.from(changedUserIds).map((userId) => syncUserRoleFromSubscriptions(userId))
+      );
     }
 
     return NextResponse.json({

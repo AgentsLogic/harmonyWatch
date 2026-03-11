@@ -3,8 +3,9 @@ import { serverConfig } from '@/lib/env';
 import { supabaseAdmin } from '@/lib/supabase';
 import { batchFilterByMemberChannelId } from '@/lib/services/youtube-membership';
 import {
-  upsertSubscription,
+  batchUpsertSubscriptions,
   syncUserRoleFromSubscriptions,
+  type UpsertSubscriptionParams,
 } from '@/lib/services/subscription-service';
 
 /**
@@ -67,7 +68,24 @@ export async function GET(request: NextRequest) {
     // Batch check membership status
     const memberChannelIds = await batchFilterByMemberChannelId(channelIds);
 
-    // Process each linked account
+    // Pre-fetch all existing YouTube subscriptions for these users in one query
+    const userIds = linkedAccounts.map((a) => a.user_id);
+    const { data: existingSubs } = await supabaseAdmin
+      .from('subscriptions')
+      .select('user_id, external_id, status')
+      .in('user_id', userIds)
+      .eq('provider', 'youtube');
+
+    const existingSubMap = new Map<string, string>();
+    for (const sub of existingSubs || []) {
+      existingSubMap.set(`${sub.user_id}:${sub.external_id}`, sub.status);
+    }
+
+    // Build batch arrays — no DB calls inside the loop
+    const subscriptionUpserts: UpsertSubscriptionParams[] = [];
+    const linkedAccountUpdates: Array<{ userId: string; data: object }> = [];
+    const expiredUserIds = new Set<string>(); // only expired users need role sync
+
     let activeCount = 0;
     let expiredCount = 0;
     const now = new Date();
@@ -76,92 +94,98 @@ export async function GET(request: NextRequest) {
       const channelId = account.external_user_id;
       const userId = account.user_id;
       const isMember = memberChannelIds.has(channelId);
-
-      // Check if user has pending_expiry flag (24-hour grace period)
       const metadata = account.metadata || {};
       const pendingExpiry = metadata.pending_expiry;
-      const pendingExpiryDate = pendingExpiry
-        ? new Date(pendingExpiry)
-        : null;
+      const pendingExpiryDate = pendingExpiry ? new Date(pendingExpiry) : null;
 
       if (isMember) {
-        // User is a member - ensure subscription is active
-        // Clear pending_expiry flag if it exists
-        if (pendingExpiry) {
-          await supabaseAdmin
-            .from('linked_accounts')
-            .update({
-              metadata: { ...metadata, pending_expiry: null },
-              last_verified_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', userId)
-            .eq('platform', 'youtube');
-        }
-
-        // Upsert active subscription
-        await upsertSubscription({
+        subscriptionUpserts.push({
           user_id: userId,
           provider: 'youtube',
           external_id: channelId,
           status: 'active',
           plan: 'monthly',
-          current_period_start: new Date().toISOString(),
-          provider_data: {
-            channel_id: channelId,
-          },
+          current_period_start: now.toISOString(),
+          provider_data: { channel_id: channelId },
         });
+
+        if (pendingExpiry) {
+          linkedAccountUpdates.push({
+            userId,
+            data: {
+              metadata: { ...metadata, pending_expiry: null },
+              last_verified_at: now.toISOString(),
+              updated_at: now.toISOString(),
+            },
+          });
+        }
 
         activeCount++;
       } else {
-        // User is not a member
         if (pendingExpiry && pendingExpiryDate && pendingExpiryDate > now) {
-          // Still in grace period - don't expire yet
+          // Still in grace period - skip
           continue;
         }
 
         if (pendingExpiry && pendingExpiryDate && pendingExpiryDate <= now) {
-          // Grace period expired - mark subscription as expired
-          await upsertSubscription({
+          // Grace period expired - expire subscription
+          subscriptionUpserts.push({
             user_id: userId,
             provider: 'youtube',
             external_id: channelId,
             status: 'expired',
             plan: 'monthly',
-            provider_data: {
-              channel_id: channelId,
+            provider_data: { channel_id: channelId },
+          });
+
+          linkedAccountUpdates.push({
+            userId,
+            data: {
+              metadata: { ...metadata, pending_expiry: null },
+              last_verified_at: now.toISOString(),
+              updated_at: now.toISOString(),
             },
           });
 
-          // Clear pending_expiry flag
-          await supabaseAdmin
-            .from('linked_accounts')
-            .update({
-              metadata: { ...metadata, pending_expiry: null },
-              last_verified_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', userId)
-            .eq('platform', 'youtube');
-
-          // Sync user role
-          await syncUserRoleFromSubscriptions(userId);
+          expiredUserIds.add(userId);
           expiredCount++;
         } else if (!pendingExpiry) {
-          // First time missing - set pending_expiry flag (24-hour grace period)
+          // First time missing - set 24-hour grace period
           const gracePeriodEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-          await supabaseAdmin
-            .from('linked_accounts')
-            .update({
+          linkedAccountUpdates.push({
+            userId,
+            data: {
               metadata: { ...metadata, pending_expiry: gracePeriodEnd.toISOString() },
-              last_verified_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', userId)
-            .eq('platform', 'youtube');
+              last_verified_at: now.toISOString(),
+              updated_at: now.toISOString(),
+            },
+          });
         }
       }
+    }
+
+    // 1. Batch upsert all subscription changes in a single DB call
+    await batchUpsertSubscriptions(subscriptionUpserts);
+
+    // 2. Update linked account metadata in parallel
+    if (linkedAccountUpdates.length > 0) {
+      await Promise.all(
+        linkedAccountUpdates.map(({ userId, data }) =>
+          supabaseAdmin
+            .from('linked_accounts')
+            .update(data)
+            .eq('user_id', userId)
+            .eq('platform', 'youtube')
+        )
+      );
+    }
+
+    // 3. Sync roles only for users whose subscription just expired
+    if (expiredUserIds.size > 0) {
+      await Promise.all(
+        Array.from(expiredUserIds).map((userId) => syncUserRoleFromSubscriptions(userId))
+      );
     }
 
     return NextResponse.json({

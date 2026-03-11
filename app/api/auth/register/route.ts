@@ -122,17 +122,17 @@ export async function POST(request: NextRequest) {
         normalizedMessage.includes('already been registered')
       ) {
         // User already exists - check if they're pending and update password instead
-        const { data: { users }, error: listError } = await supabaseService.auth.admin.listUsers();
-        
+        // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
+        const { data: { users: allUsers }, error: listError } = await supabaseService.auth.admin.listUsers({ perPage: 1000 });
+        const existingUser = (allUsers as any[] | null)?.find((u: any) => u.email === email) ?? null;
+
         if (listError) {
-          console.error('Error listing users:', listError);
+          console.error('Error looking up user by email:', listError);
           return NextResponse.json(
             { error: 'An account with this email already exists' },
             { status: 409 }
           );
         }
-
-        const existingUser = users.find(u => u.email === email);
 
         if (existingUser) {
           // Check if user profile exists and is pending

@@ -89,29 +89,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch auth users separately (Supabase doesn't allow direct joins to auth.users)
+    // Fetch auth users for just these user IDs (targeted lookup instead of all users)
     const userIds = (users || []).map((u: any) => u.user_id);
-    const { data: authUsersData } = await supabase.auth.admin.listUsers();
-    
+    const authUserResults = await Promise.all(
+      userIds.map((id: string) => supabase.auth.admin.getUserById(id))
+    );
+
     // Create a map of user_id -> auth user data
     const authUsersMap = new Map();
-    authUsersData?.users.forEach((authUser) => {
-      // Determine signup method from identities or app_metadata
-      let signupMethod = 'email'; // Default to email
-      
+    authUserResults.forEach(({ data: { user: authUser } }) => {
+      if (!authUser) return;
+      let signupMethod = 'email';
       if (authUser.identities && authUser.identities.length > 0) {
-        // Check the first identity provider
         const primaryIdentity = authUser.identities[0];
         if (primaryIdentity.provider === 'apple') {
           signupMethod = 'apple';
-        } else if (primaryIdentity.provider === 'email') {
-          signupMethod = 'email';
         }
       } else if (authUser.app_metadata?.provider) {
-        // Fallback to app_metadata if identities not available
         signupMethod = authUser.app_metadata.provider === 'apple' ? 'apple' : 'email';
       }
-      
       authUsersMap.set(authUser.id, {
         email: authUser.email,
         email_confirmed_at: authUser.email_confirmed_at,
@@ -225,18 +221,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users.find(u => u.email === email);
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
-      );
-    }
-
     // Create the user using Supabase Auth
+    // (createUser returns email_exists error if the email is already registered)
     const { data: createdUser, error: createUserError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -249,9 +235,11 @@ export async function POST(request: NextRequest) {
 
     if (createUserError || !createdUser?.user) {
       console.error('Error creating user:', createUserError);
+      const isEmailExists = (createUserError as any)?.code === 'email_exists' ||
+        createUserError?.message?.toLowerCase().includes('already registered');
       return NextResponse.json(
-        { error: createUserError?.message || 'Failed to create user' },
-        { status: 500 }
+        { error: isEmailExists ? 'An account with this email already exists' : (createUserError?.message || 'Failed to create user') },
+        { status: isEmailExists ? 409 : 500 }
       );
     }
 

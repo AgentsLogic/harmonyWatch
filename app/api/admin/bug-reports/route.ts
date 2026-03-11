@@ -106,15 +106,15 @@ export async function GET(request: NextRequest) {
       userProfilesMap.set(profile.user_id, profile.display_name);
     });
 
-    // Fetch auth users separately (Supabase doesn't allow direct joins to auth.users)
-    const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers();
-    
+    // Fetch emails for just these reporters (targeted lookup instead of all users)
+    const authUserResults = await Promise.all(
+      userIds.map((id: string) => supabaseAdmin.auth.admin.getUserById(id))
+    );
+
     // Create a map of user_id -> email
     const authUsersMap = new Map();
-    authUsersData?.users.forEach((authUser) => {
-      if (userIds.includes(authUser.id)) {
-        authUsersMap.set(authUser.id, authUser.email);
-      }
+    authUserResults.forEach(({ data: { user: authUser } }) => {
+      if (authUser) authUsersMap.set(authUser.id, authUser.email);
     });
 
     // Transform data to include user email and display name
