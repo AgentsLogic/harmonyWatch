@@ -30,7 +30,6 @@ export async function GET() {
     }
 
     if (!videos || videos.length === 0) {
-      console.log('[API] No videos found in database');
       return NextResponse.json(
         { error: 'No videos available' },
         { status: 404 }

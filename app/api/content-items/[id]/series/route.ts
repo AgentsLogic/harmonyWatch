@@ -45,15 +45,9 @@ export async function GET(
 
     if (!containingSeries) {
       // Content is not in any series
-      console.log('[API] Content item not found in any series:', contentId);
       return NextResponse.json({ seriesTitle: null, isDailyContent: false });
     }
 
-    console.log('[API] Found series for content:', { 
-      contentId, 
-      seriesTitle: containingSeries.title,
-      isDailyContent: containingSeries.is_daily_content || false
-    });
     
     return NextResponse.json({ 
       seriesTitle: containingSeries.title,

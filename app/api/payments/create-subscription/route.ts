@@ -117,16 +117,6 @@ export async function POST(request: NextRequest) {
 
 		const expandedSubscription = subscription as ExpandedSubscription;
 
-		console.log('[create-subscription] Subscription created:', {
-			id: expandedSubscription.id,
-			status: expandedSubscription.status,
-			latest_invoice_type: typeof expandedSubscription.latest_invoice,
-			latest_invoice_id: typeof expandedSubscription.latest_invoice === 'object' 
-				? expandedSubscription.latest_invoice?.id 
-				: expandedSubscription.latest_invoice,
-			has_pending_setup_intent: !!expandedSubscription.pending_setup_intent,
-			pending_setup_intent_type: typeof expandedSubscription.pending_setup_intent,
-		});
 
 		// Get client secret following Stripe's recommended pattern
 		// See: https://stripe.com/docs/billing/subscriptions/build-subscription?ui=elements
@@ -136,31 +126,18 @@ export async function POST(request: NextRequest) {
 		// Check for payment intent first (standard flow)
 		// Pattern: subscription.latest_invoice.payment_intent.client_secret
 		const invoice = expandedSubscription.latest_invoice;
-		console.log('[create-subscription] Checking invoice:', {
-			exists: !!invoice,
-			type: typeof invoice,
-		});
 
 		if (invoice && typeof invoice === 'object') {
 			const expandedInvoice = invoice as ExpandedInvoice;
 			const paymentIntent = expandedInvoice.payment_intent;
-			console.log('[create-subscription] Payment intent:', {
-				exists: !!paymentIntent,
-				type: typeof paymentIntent,
-				is_object: typeof paymentIntent === 'object',
-				has_client_secret: typeof paymentIntent === 'object' && !!paymentIntent?.client_secret,
-			});
 
 			if (paymentIntent && typeof paymentIntent === 'object' && paymentIntent.client_secret) {
 				clientSecret = paymentIntent.client_secret;
-				console.log('[create-subscription] ✓ Got client secret from payment intent');
 			} else if (paymentIntent && typeof paymentIntent === 'string') {
 				// Payment intent is a string ID, retrieve it
-				console.log('[create-subscription] Retrieving payment intent by ID:', paymentIntent);
 				try {
 					const retrieved = await stripe.paymentIntents.retrieve(paymentIntent);
 					clientSecret = retrieved.client_secret;
-					console.log('[create-subscription] ✓ Got client secret from retrieved payment intent');
 				} catch (error) {
 					console.error('[create-subscription] Failed to retrieve payment intent:', error);
 				}
@@ -170,52 +147,36 @@ export async function POST(request: NextRequest) {
 		// Fallback to setup intent (when save_default_payment_method is used)
 		// Pattern from: https://stripe.com/docs/billing/subscriptions/creating
 		if (!clientSecret) {
-			console.log('[create-subscription] No payment intent found, checking for setup intent...');
 			
 			// First check if setup intent exists in the response
 			if (expandedSubscription.pending_setup_intent) {
 				const setupIntent = expandedSubscription.pending_setup_intent;
-				console.log('[create-subscription] Setup intent in response:', {
-					type: typeof setupIntent,
-					is_object: typeof setupIntent === 'object',
-					has_client_secret: typeof setupIntent === 'object' && !!setupIntent?.client_secret,
-				});
 
 				if (typeof setupIntent === 'object' && setupIntent.client_secret) {
 					clientSecret = setupIntent.client_secret;
-					console.log('[create-subscription] ✓ Got client secret from setup intent');
 				} else if (typeof setupIntent === 'string') {
-					console.log('[create-subscription] Retrieving setup intent by ID:', setupIntent);
 					try {
 						const retrieved = await stripe.setupIntents.retrieve(setupIntent);
 						clientSecret = retrieved.client_secret;
-						console.log('[create-subscription] ✓ Got client secret from retrieved setup intent');
 					} catch (error) {
 						console.error('[create-subscription] Failed to retrieve setup intent:', error);
 					}
 				}
 			} else {
 				// Setup intent not in initial response, retrieve subscription again
-				console.log('[create-subscription] Setup intent not in response, retrieving subscription with full expansion...');
 				try {
 					const retrievedSubscription = await stripe.subscriptions.retrieve(expandedSubscription.id, {
 						expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
 					}) as ExpandedSubscription;
 					
-					console.log('[create-subscription] Retrieved subscription:', {
-						has_pending_setup_intent: !!retrievedSubscription.pending_setup_intent,
-						pending_setup_intent_type: typeof retrievedSubscription.pending_setup_intent,
-					});
 					
 					if (retrievedSubscription.pending_setup_intent) {
 						const setupIntent = retrievedSubscription.pending_setup_intent;
 						if (typeof setupIntent === 'object' && setupIntent.client_secret) {
 							clientSecret = setupIntent.client_secret;
-							console.log('[create-subscription] ✓ Got client secret from retrieved subscription setup intent');
 						} else if (typeof setupIntent === 'string') {
 							const retrieved = await stripe.setupIntents.retrieve(setupIntent);
 							clientSecret = retrieved.client_secret;
-							console.log('[create-subscription] ✓ Got client secret from retrieved setup intent (string ID)');
 						}
 					}
 					
@@ -226,11 +187,9 @@ export async function POST(request: NextRequest) {
 							const paymentIntent = retrievedInvoice.payment_intent;
 							if (typeof paymentIntent === 'object' && paymentIntent.client_secret) {
 								clientSecret = paymentIntent.client_secret;
-								console.log('[create-subscription] ✓ Got client secret from retrieved invoice payment intent');
 							} else if (typeof paymentIntent === 'string') {
 								const retrieved = await stripe.paymentIntents.retrieve(paymentIntent);
 								clientSecret = retrieved.client_secret;
-								console.log('[create-subscription] ✓ Got client secret from retrieved payment intent (string ID)');
 							}
 						}
 					}

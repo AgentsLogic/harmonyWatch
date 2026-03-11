@@ -121,7 +121,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[RevenueCat Sync] Updated user ${user.id} to ${profile.user_type}${hasActiveEntitlement ? ' (signup complete)' : ''}`);
 
     // Return updated user data
     return NextResponse.json({

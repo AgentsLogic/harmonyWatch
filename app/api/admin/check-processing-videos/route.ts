@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized - Admin or Staff access required' }, { status: 401 });
     }
 
-    console.log('[Check Processing Videos] Starting check for processing videos...');
 
     // Get all content items that are processing or pending
     // Include both videos with and without mux_upload_id (pending videos might not have it yet)
@@ -38,7 +37,6 @@ export async function POST(request: NextRequest) {
     // Automatically transition pending items with upload_id to processing status
     const pendingItemsWithUploadId = itemsWithUploadId.filter(item => item.stream_status === 'pending');
     if (pendingItemsWithUploadId.length > 0) {
-      console.log(`[Check Processing Videos] Found ${pendingItemsWithUploadId.length} pending items with upload_id, updating to processing...`);
       
       for (const item of pendingItemsWithUploadId) {
         const { error: updateError } = await supabaseAdmin
@@ -49,7 +47,6 @@ export async function POST(request: NextRequest) {
         if (updateError) {
           console.error(`[Check Processing Videos] Error updating item ${item.id} from pending to processing:`, updateError);
         } else {
-          console.log(`[Check Processing Videos] Updated item ${item.id} (${item.title}) from pending to processing`);
           // Update the item's status in memory so it's processed correctly below
           item.stream_status = 'processing';
         }
@@ -84,7 +81,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (itemsToCheck.length === 0 && itemsWithoutUploadId.length === 0) {
-      console.log('[Check Processing Videos] No processing items found');
       return NextResponse.json({ 
         message: 'No processing videos found',
         checked: 0,
@@ -93,7 +89,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`[Check Processing Videos] Found ${itemsToCheck.length} processing items with upload ID, ${itemsWithoutUploadId.length} waiting for upload`);
 
     // Check each processing item
     for (const item of itemsToCheck) {
@@ -104,7 +99,6 @@ export async function POST(request: NextRequest) {
         const uploadDetails = await muxVideoService.getUploadDetails(item.mux_upload_id);
         
         if (!uploadDetails.success || !uploadDetails.assetId) {
-          console.log(`[Check Processing Videos] Upload ${item.mux_upload_id} still processing (no asset yet)`);
           results.push({
             id: item.id,
             title: item.title,
@@ -118,7 +112,6 @@ export async function POST(request: NextRequest) {
         const assetDetails = await muxVideoService.getAssetDetails(uploadDetails.assetId);
         
         if (!assetDetails) {
-          console.log(`[Check Processing Videos] Could not retrieve asset details for ${uploadDetails.assetId}`);
           results.push({
             id: item.id,
             title: item.title,
@@ -157,7 +150,6 @@ export async function POST(request: NextRequest) {
               message: `Update failed: ${updateError.message}`
             });
           } else {
-            console.log(`[Check Processing Videos] Updated item ${item.id} (${item.title}) to ready`);
             updatedCount++;
             results.push({
               id: item.id,
@@ -176,7 +168,6 @@ export async function POST(request: NextRequest) {
           if (updateError) {
             console.error(`[Check Processing Videos] Error updating item ${item.id} to errored:`, updateError);
           } else {
-            console.log(`[Check Processing Videos] Updated item ${item.id} (${item.title}) to errored`);
             results.push({
               id: item.id,
               title: item.title,
@@ -186,7 +177,6 @@ export async function POST(request: NextRequest) {
           }
         } else {
           // Still preparing
-          console.log(`[Check Processing Videos] Asset ${uploadDetails.assetId} still preparing`);
           results.push({
             id: item.id,
             title: item.title,

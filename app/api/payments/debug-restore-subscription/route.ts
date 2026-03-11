@@ -79,7 +79,6 @@ export async function POST(request: NextRequest) {
 		);
 
 		if (hasNoSubscriptions && user.email) {
-			console.log('[Debug Restore] No subscriptions found with user ID, attempting to identify user by email');
 			
 			// Set email attribute and identify user to transfer subscriptions from anonymous ID
 			try {
@@ -114,7 +113,6 @@ export async function POST(request: NextRequest) {
 				);
 
 				if (identifyResponse.ok) {
-					console.log('[Debug Restore] Successfully identified user, re-querying subscriptions');
 					// Re-query after identification
 					revenueCatResponse = await fetch(
 						`https://api.revenuecat.com/v1/subscribers/${user.id}`,

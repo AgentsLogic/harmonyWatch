@@ -63,7 +63,6 @@ export async function GET(request: NextRequest) {
               const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
               if (updatedAt > fiveMinutesAgo) {
                 // User was recently updated - might be a new subscription, don't sync yet
-                console.log('[Premium Check] User recently updated, not syncing yet (possible race condition)');
                 shouldSync = false;
               }
             }

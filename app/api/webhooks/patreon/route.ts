@@ -118,7 +118,6 @@ async function processPatreonWebhook(payload: any): Promise<void> {
 
   // Check idempotency
   if (await isEventProcessed(eventId)) {
-    console.log(`[Patreon Webhook] Event ${eventId} already processed, skipping`);
     return;
   }
 
@@ -163,9 +162,6 @@ async function processPatreonWebhook(payload: any): Promise<void> {
       .maybeSingle();
 
     if (!linkedAccountByUserId) {
-      console.log(
-        `[Patreon Webhook] No linked account found for Patreon user ${patreonUserId}, skipping`
-      );
       await markEventProcessed(eventId, eventType, 'processed', payload);
       return;
     }
