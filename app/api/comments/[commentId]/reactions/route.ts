@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { supabaseConfig } from '../../../../../lib/config';
+import { supabase as supabaseAuth } from '@/lib/supabase';
 import { commentsService } from '../../../../../lib/services/comments';
-
-const supabaseAuth = createClient(
-  supabaseConfig.url,
-  supabaseConfig.anonKey
-);
 
 export async function POST(
   request: NextRequest,

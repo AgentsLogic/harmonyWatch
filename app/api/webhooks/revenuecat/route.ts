@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, adminGetUserByEmail } from '@/lib/supabase';
 import { serverConfig } from '@/lib/env';
 import {
 	upsertSubscription,
@@ -185,9 +185,7 @@ async function findUserByAppUserIdOrEmail(
 
   if (email) {
     try {
-      // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
-      const { data: { users: allUsers } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-      const supabaseUser = (allUsers as any[] | null)?.find((u: any) => u.email === email) ?? null;
+      const supabaseUser = await adminGetUserByEmail(email);
       if (supabaseUser) {
         return supabaseUser.id;
       }
@@ -294,16 +292,11 @@ async function updateUserSubscriptionStatus(
       if (email) {
         
         try {
-          // Find Supabase user by email
-          // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
-          const { data: { users: allUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-          const supabaseUser = (allUsers as any[] | null)?.find((u: any) => u.email === email) ?? null;
+          // Find Supabase user by email using Admin REST API (direct lookup, not full-table scan)
+          const supabaseUser = await adminGetUserByEmail(email);
 
-          if (listError) {
-            console.error('[RevenueCat Webhook] Error looking up user by email:', listError);
-          } else {
-            if (supabaseUser) {
-              // Update the appUserID to the correct Supabase user_id
+          if (supabaseUser) {
+            // Update the appUserID to the correct Supabase user_id
               const correctUserID = supabaseUser.id;
               
               // Re-query for the profile with correct ID

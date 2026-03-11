@@ -8,9 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
-import { publicConfig } from '@/lib/env';
 import {
 	assertStripeClient,
 	ensureStripeCustomer,
@@ -18,12 +16,7 @@ import {
 	stripeMetadataToRecord,
 	epochSecondsToIso,
 } from '@/lib/services/stripe';
-import { supabaseAdmin } from '@/lib/supabase';
-
-const supabaseAuth = createClient(
-	publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-	publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+import { supabase as supabaseAuth, supabaseAdmin } from '@/lib/supabase';
 
 type PlanOption = 'monthly' | 'yearly';
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin as supabaseService } from '@/lib/supabase';
+import { supabaseAdmin as supabaseService, adminGetUserByEmail } from '@/lib/supabase';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -43,9 +43,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if email is already in use by another user
-    // Note: getUserByEmail is not available in this SDK version; use listUsers + filter
-    const { data: { users: allUsers } } = await supabaseService.auth.admin.listUsers({ perPage: 1000 });
-    const existingUserWithEmail = (allUsers as any[] | null)?.find((u: any) => u.email === email.trim()) ?? null;
+    const existingUserWithEmail = await adminGetUserByEmail(email.trim());
     if (existingUserWithEmail && existingUserWithEmail.id !== user.id) {
       return NextResponse.json(
         { error: 'Email is already in use by another account' },
