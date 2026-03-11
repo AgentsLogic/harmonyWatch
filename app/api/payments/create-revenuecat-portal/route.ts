@@ -34,13 +34,7 @@ export async function POST(request: NextRequest) {
 		if (useSandbox && process.env.REVENUECAT_SANDBOX_API_KEY) {
 			revenueCatApiKey = process.env.REVENUECAT_SANDBOX_API_KEY;
 			apiKeySource = 'sandbox';
-			console.log('[RevenueCat Portal] Using sandbox API key for development');
 		} else {
-			console.log('[RevenueCat Portal] Using production API key', { 
-				isDevelopment, 
-				useSandbox, 
-				hasSandboxKey: !!process.env.REVENUECAT_SANDBOX_API_KEY 
-			});
 		}
 		
 		if (!revenueCatApiKey) {
@@ -50,12 +44,6 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		console.log('[RevenueCat Portal] Querying RevenueCat API:', {
-			user_id: user.id,
-			api_key_source: apiKeySource,
-			api_key_prefix: revenueCatApiKey?.substring(0, 10) + '...',
-			is_development: isDevelopment
-		});
 
 		// Get subscriber info from RevenueCat
 		// First, try with the user's ID
@@ -89,7 +77,6 @@ export async function POST(request: NextRequest) {
 		);
 
 		if (hasNoSubscriptions && user.email) {
-			console.log('[RevenueCat Portal] No subscriptions found with user ID, attempting to identify user by email');
 			
 			// RevenueCat's identify endpoint can transfer subscriptions from anonymous IDs
 			// We'll identify the user with email attribute so RevenueCat can find and transfer subscriptions
@@ -113,7 +100,6 @@ export async function POST(request: NextRequest) {
 				);
 
 				if (setAttributesResponse.ok) {
-					console.log('[RevenueCat Portal] Set email attribute on user');
 				}
 
 				// Now identify the user - RevenueCat should automatically find subscriptions by email
@@ -133,7 +119,6 @@ export async function POST(request: NextRequest) {
 				);
 
 				if (identifyResponse.ok) {
-					console.log('[RevenueCat Portal] Successfully identified user, subscriptions should be transferred');
 					// Re-query after identification
 					revenueCatResponse = await fetch(
 						`https://api.revenuecat.com/v1/subscribers/${user.id}`,
@@ -148,10 +133,6 @@ export async function POST(request: NextRequest) {
 					if (revenueCatResponse.ok) {
 						revenueCatData = await revenueCatResponse.json();
 						subscriber = revenueCatData.subscriber;
-						console.log('[RevenueCat Portal] After identification, found subscriptions:', {
-							subscriptions: Object.keys(subscriber?.subscriptions || {}).length,
-							entitlements: Object.keys(subscriber?.entitlements || {}).length
-						});
 					}
 				} else {
 					console.warn('[RevenueCat Portal] Identify request failed:', identifyResponse.status);
@@ -184,58 +165,9 @@ export async function POST(request: NextRequest) {
 			return ent.is_active === true;
 		});
 
-		// DEBUG: Log full subscriber data to diagnose the issue
-		console.log('[RevenueCat Portal] Full subscriber data:', JSON.stringify({
-			queried_user_id: user.id,
-			api_key_source: apiKeySource,
-			subscriber_id: subscriber?.original_app_user_id,
-			first_seen: subscriber?.first_seen,
-			request_date: subscriber?.request_date,
-			has_management_url_at_subscriber_level: !!subscriber?.management_url,
-			management_url_at_subscriber_level: subscriber?.management_url,
-			subscriptions_count: Object.keys(subscriber?.subscriptions || {}).length,
-			non_subscriptions_count: Object.keys(subscriber?.non_subscriptions || {}).length,
-			entitlements_count: Object.keys(entitlements).length,
-			active_entitlements_count: activeEntitlements.length,
-			all_subscription_keys: Object.keys(subscriber?.subscriptions || {}),
-			all_non_subscription_keys: Object.keys(subscriber?.non_subscriptions || {}),
-			all_entitlement_keys: Object.keys(entitlements),
-			subscription_stores: Object.values(subscriber?.subscriptions || {}).map((s: any) => ({
-				key: Object.keys(subscriber?.subscriptions || {}).find(k => subscriber?.subscriptions[k] === s),
-				store: s.store,
-				has_management_url: !!s.management_url,
-				management_url: s.management_url,
-				product_identifier: s.product_identifier,
-				is_sandbox: s.is_sandbox
-			})),
-			non_subscription_stores: Object.values(subscriber?.non_subscriptions || {}).map((s: any) => ({
-				key: Object.keys(subscriber?.non_subscriptions || {}).find(k => subscriber?.non_subscriptions[k] === s),
-				store: s.store,
-				has_management_url: !!s.management_url,
-				management_url: s.management_url,
-				product_identifier: s.product_identifier,
-				is_sandbox: s.is_sandbox
-			})),
-			entitlement_stores: Object.entries(entitlements).map(([key, ent]: [string, any]) => ({
-				key,
-				store: ent.store,
-				product_identifier: ent.product_identifier,
-				is_sandbox: ent.is_sandbox,
-				is_active: ent.is_active,
-				expires_date: ent.expires_date
-			})),
-			// Log full subscription objects for debugging
-			full_subscriptions: subscriber?.subscriptions,
-			full_non_subscriptions: subscriber?.non_subscriptions,
-			full_entitlements: entitlements,
-			// Check if subscriber exists but has no data (might be wrong app)
-			subscriber_exists: !!subscriber,
-			subscriber_keys: subscriber ? Object.keys(subscriber) : []
-		}, null, 2));
 
 		// First, check if management_url exists at the subscriber level
 		if (subscriber?.management_url) {
-			console.log('[RevenueCat Portal] ✅ Found management_url at subscriber level');
 			return NextResponse.json({ url: subscriber.management_url }, { status: 200 });
 		}
 
@@ -277,17 +209,9 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		console.log('[RevenueCat Portal] Web subscription search:', {
-			found_web_sub: !!webSub,
-			web_sub_store: webSub?.store,
-			web_sub_has_management_url: !!webSub?.management_url,
-			web_sub_management_url: webSub?.management_url,
-			web_sub_product_identifier: webSub?.product_identifier
-		});
 
 		// If we found a web subscription, use its management_url
 		if (webSub?.management_url) {
-			console.log('[RevenueCat Portal] ✅ Found management_url in web subscription');
 			return NextResponse.json({ url: webSub.management_url }, { status: 200 });
 		}
 
@@ -298,14 +222,8 @@ export async function POST(request: NextRequest) {
 			return sub.management_url;
 		}) as any;
 
-		console.log('[RevenueCat Portal] Any subscription with management_url:', {
-			found_any_sub: !!anySub,
-			any_sub_store: anySub?.store,
-			any_sub_management_url: anySub?.management_url
-		});
 
 		if (anySub?.management_url) {
-			console.log('[RevenueCat Portal] ✅ Found management_url in any subscription');
 			return NextResponse.json({ url: anySub.management_url }, { status: 200 });
 		}
 
@@ -314,11 +232,6 @@ export async function POST(request: NextRequest) {
 			return sub.store?.toLowerCase() === 'app_store';
 		});
 
-		console.log('[RevenueCat Portal] Final check:', {
-			has_ios_subscription: hasIOSSubscription,
-			total_subscriptions: Object.keys(allSubscriptions).length,
-			all_stores: Object.values(allSubscriptions).map((s: any) => s.store)
-		});
 
 		// If we still don't have a management_url, return a helpful error
 		if (hasIOSSubscription) {

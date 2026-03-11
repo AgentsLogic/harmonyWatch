@@ -245,9 +245,6 @@ async function updateUserSubscriptionStatus(
   } | null
 ): Promise<void> {
   try {
-    console.log('[RevenueCat Webhook] Looking for user with ID:', appUserID, {
-      has_email_from_event: !!eventEmail,
-    });
     
     // Find user by RevenueCat app_user_id (which should be Supabase user_id)
     const { data: profile, error: findError } = await supabaseAdmin
@@ -295,7 +292,6 @@ async function updateUserSubscriptionStatus(
       
       // If we have an email, try to find user by email
       if (email) {
-        console.log('[RevenueCat Webhook] Attempting to find user by email:', email);
         
         try {
           // Find Supabase user by email
@@ -307,7 +303,6 @@ async function updateUserSubscriptionStatus(
             console.error('[RevenueCat Webhook] Error looking up user by email:', listError);
           } else {
             if (supabaseUser) {
-              console.log('[RevenueCat Webhook] Found Supabase user by email:', supabaseUser.id);
               // Update the appUserID to the correct Supabase user_id
               const correctUserID = supabaseUser.id;
               
@@ -346,9 +341,6 @@ async function updateUserSubscriptionStatus(
                 throw updateError;
               }
 
-              console.log(`[RevenueCat Webhook] ✅ Successfully updated user ${correctUserID} (resolved from ${appUserID}) to ${userType}`, {
-                updated_profile: updatedProfile,
-              });
               return;
             } else {
               console.error('[RevenueCat Webhook] Supabase user not found for email:', email);
@@ -362,10 +354,6 @@ async function updateUserSubscriptionStatus(
       console.error('[RevenueCat Webhook] User not found by any method. User may need to be created or ID mismatch.');
       return;
     } else {
-      console.log('[RevenueCat Webhook] Found user profile:', {
-        user_id: profile.user_id,
-        current_user_type: profile.user_type,
-      });
     }
 
     // Update user_type based on entitlement status (RC is source of truth)
@@ -382,12 +370,6 @@ async function updateUserSubscriptionStatus(
       updateData.signup_status = 'complete';
     }
 
-    console.log('[RevenueCat Webhook] Updating user:', {
-      user_id: appUserID,
-      new_user_type: userType,
-      has_active_entitlement: hasActiveEntitlement,
-      update_data: updateData,
-    });
 
     const { data: updatedProfile, error: updateError } = await supabaseAdmin
       .from('user_profiles')
@@ -406,9 +388,6 @@ async function updateUserSubscriptionStatus(
       throw updateError;
     }
 
-    console.log(`[RevenueCat Webhook] ✅ Successfully updated user ${appUserID} to ${userType}${hasActiveEntitlement ? ' (signup complete)' : ''}`, {
-      updated_profile: updatedProfile,
-    });
   } catch (error) {
     console.error('[RevenueCat Webhook] Error updating subscription status:', error);
     throw error;
@@ -429,12 +408,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = JSON.parse(rawBody);
-    console.log('[RevenueCat Webhook] Received event:', {
-      type: body.event?.type,
-      app_user_id: body.event?.app_user_id,
-      entitlement_ids: body.event?.entitlement_ids,
-      product_id: body.event?.product_id,
-    });
 
     const { event } = body;
 
@@ -455,7 +428,6 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing) {
-      console.log('[RevenueCat Webhook] Event already processed:', eventId);
       return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
     }
 
@@ -477,12 +449,6 @@ export async function POST(request: NextRequest) {
     if (!appUserID && event.type === 'TRANSFER') {
       // For TRANSFER events, use transferred_to[0] as the new user ID
       appUserID = event.transferred_to?.[0];
-      console.log('[RevenueCat Webhook] TRANSFER event detected:', {
-        transferred_from: event.transferred_from,
-        transferred_to: event.transferred_to,
-        using_user_id: appUserID,
-        note: 'Subscription transferred from anonymous ID to real user ID',
-      });
     }
     
     if (!appUserID) {
@@ -493,13 +459,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[RevenueCat Webhook] Processing event for user:', appUserID);
-    console.log('[RevenueCat Webhook] Event details:', {
-      type: event.type,
-      entitlement_ids: event.entitlement_ids,
-      has_entitlements_object: !!event.entitlements,
-      email: event.subscriber_attributes?.$email?.value,
-    });
 
     // Check if user has active entitlements
     // For INITIAL_PURCHASE events, entitlement_ids array indicates active entitlements
@@ -509,20 +468,12 @@ export async function POST(request: NextRequest) {
     if (event.type === 'INITIAL_PURCHASE' || event.type === 'RENEWAL') {
       // For purchase events, if entitlement_ids array exists and has items, user has active entitlement
       hasActiveEntitlement = Array.isArray(event.entitlement_ids) && event.entitlement_ids.length > 0;
-      console.log('[RevenueCat Webhook] Purchase event - checking entitlement_ids:', {
-        entitlement_ids: event.entitlement_ids,
-        has_active: hasActiveEntitlement,
-      });
     } else {
       // For other events, check the entitlements object
       const entitlements = event.entitlements || {};
       hasActiveEntitlement = Object.values(entitlements).some(
         (entitlement: any) => entitlement.is_active === true
       );
-      console.log('[RevenueCat Webhook] Non-purchase event - checking entitlements object:', {
-        has_active: hasActiveEntitlement,
-        entitlement_count: Object.keys(entitlements).length,
-      });
     }
 
     // Get email from event payload (if available)
@@ -720,11 +671,6 @@ export async function POST(request: NextRequest) {
                 
                 const store = matchingSub?.store || null;
                 
-                console.log('[RevenueCat Webhook] BILLING_ISSUE detected:', {
-                  app_user_id: appUserID,
-                  grace_period_expires_at: active.grace_period_expires_date,
-                  subscription_still_active: true,
-                });
                 
                 // Update subscription with past_due status (grace period)
                 await updateSubscriptionFromRevenueCat(appUserID, eventEmail, active, store);
@@ -751,7 +697,6 @@ export async function POST(request: NextRequest) {
       default:
         // For other events, sync subscription status
         await updateSubscriptionFromRevenueCat(appUserID, eventEmail);
-        console.log(`[RevenueCat Webhook] Unhandled event type: ${event.type}, syncing subscription status`);
     }
 
     return NextResponse.json(

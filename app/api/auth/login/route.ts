@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
 
     // Get user profile with user_type and profile fields using service role
     // Subscription details are read from subscriptions table only
-    console.log('[LOGIN DEBUG v2] Step 1: Querying user_profiles for user_id:', data.user.id);
     const { data: profile, error: profileError } = await supabaseService
       .from('user_profiles')
       .select('user_type, display_name, signup_status')
@@ -66,31 +65,12 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError) {
-      console.error('[LOGIN DEBUG v2] Profile fetch error:', JSON.stringify(profileError));
-      
-      // Fallback: try raw fetch to PostgREST
-      console.log('[LOGIN DEBUG v2] Attempting raw fetch fallback...');
-      try {
-        const rawUrl = `${publicConfig.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?user_id=eq.${data.user.id}&select=user_type,display_name,signup_status`;
-        const rawResponse = await fetch(rawUrl, {
-          headers: {
-            'Authorization': `Bearer ${serverConfig.SUPABASE_SERVICE_ROLE_KEY}`,
-            'apikey': serverConfig.SUPABASE_SERVICE_ROLE_KEY,
-            'Accept': 'application/vnd.pgrst.object+json',
-          },
-        });
-        const rawBody = await rawResponse.text();
-        console.log('[LOGIN DEBUG v2] Raw fetch result:', rawResponse.status, rawBody);
-      } catch (rawErr) {
-        console.error('[LOGIN DEBUG v2] Raw fetch also failed:', rawErr);
-      }
-
+      console.error('Login: failed to fetch user profile:', profileError);
       return NextResponse.json(
         { error: 'Failed to fetch user profile' },
         { status: 500 }
       );
     }
-    console.log('[LOGIN DEBUG v2] Step 2: Profile fetched OK, user_type:', profile.user_type);
 
     // Use unified service to check subscription access
     const subscriptionAccess = await checkSubscriptionAccess(data.user.id);

@@ -61,40 +61,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[register] Attempting to create user', email);
-
-    const adminClient = supabaseService.auth.admin as {
-      getUserByEmail?: (
-        email: string
-      ) => Promise<{
-        data: { user: { id: string } | null }
-        error: { message?: string } | null
-      }>
-    };
-
-    if (typeof adminClient.getUserByEmail === 'function') {
-      console.log('[register] Checking for existing user via adminClient');
-
-      const existingUserResponse = await adminClient.getUserByEmail(email);
-
-      if (existingUserResponse.error && existingUserResponse.error.message !== 'User not found') {
-        console.error('Error checking existing user:', existingUserResponse.error);
-        return NextResponse.json(
-          { error: 'Failed to verify email status' },
-          { status: 500 }
-        );
-      }
-
-      if (existingUserResponse.data?.user) {
-        return NextResponse.json(
-          { error: 'An account with this email already exists' },
-          { status: 409 }
-        );
-      }
-    }
-
-    // Supabase JS v2 removed the legacy `auth.admin.getUserByEmail` helper.
-    // We rely on the createUser call below to surface duplicate-email errors.
     // Create the user using the service role to bypass email confirmations
     const {
       data: createdUser,
@@ -107,11 +73,6 @@ export async function POST(request: NextRequest) {
         user_type: userType || 'free',
         display_name: email.split('@')[0],
       },
-    });
-
-    console.log('[register] Create user response', {
-      hasUser: Boolean(createdUser?.user),
-      createUserError,
     });
 
     if (createUserError || !createdUser?.user) {
@@ -232,17 +193,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Immediately sign the user in so we can set auth cookies
-    console.log('[register] Attempting sign-in for new user', email);
-
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
-    });
-
-    console.log('[register] Sign-in response', {
-      hasSession: Boolean(signInData?.session),
-      hasUser: Boolean(signInData?.user),
-      signInError,
     });
 
     if (signInError || !signInData.session || !signInData.user) {
@@ -259,7 +212,6 @@ export async function POST(request: NextRequest) {
 
     // Ensure profile exists and is marked as pending
     const displayName = email.split('@')[0];
-    console.log('[register] Ensuring user profile exists');
 
     let profile:
       | {
@@ -284,7 +236,6 @@ export async function POST(request: NextRequest) {
       }
 
       if (!existingProfile) {
-        console.log('[register] Creating new user profile');
         const {
           data: insertedProfile,
           error: profileInsertError,
@@ -305,7 +256,6 @@ export async function POST(request: NextRequest) {
 
         profile = insertedProfile;
       } else {
-        console.log('[register] Updating existing user profile');
         const {
           data: updatedProfile,
           error: profileUpdateError,
@@ -335,8 +285,6 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    console.log('[register] Profile ensured');
-
     const response = NextResponse.json(
       { 
         message: 'User created successfully',
@@ -358,8 +306,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-
-    console.log('[register] Setting auth cookies and returning response');
 
     // Set auth cookies for the new session - extended expiration times
     response.cookies.set('sb-access-token', signInData.session.access_token, {
