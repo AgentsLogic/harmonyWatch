@@ -253,6 +253,52 @@ export async function upsertSubscription(params: UpsertSubscriptionParams): Prom
 }
 
 /**
+ * Batch upsert multiple subscription records in a single DB call.
+ * Use for bulk operations (cron jobs) to avoid N+1 queries.
+ * Invalidates caches for all affected users after the write.
+ */
+export async function batchUpsertSubscriptions(paramsList: UpsertSubscriptionParams[]): Promise<void> {
+  if (paramsList.length === 0) return;
+
+  const now = new Date().toISOString();
+  const payloads = paramsList.map((params) => ({
+    user_id: params.user_id,
+    provider: params.provider,
+    external_id: params.external_id,
+    status: params.status,
+    plan: params.plan ?? null,
+    current_period_start: params.current_period_start ?? null,
+    current_period_end: params.current_period_end ?? null,
+    expires_at: params.expires_at ?? null,
+    cancel_at: params.cancel_at ?? null,
+    canceled_at: params.canceled_at ?? null,
+    grace_period_expires_at: params.grace_period_expires_at ?? null,
+    provider_data: params.provider_data ?? null,
+    updated_at: now,
+  }));
+
+  const { error } = await supabaseAdmin
+    .from('subscriptions')
+    .upsert(payloads, { onConflict: 'provider,external_id', ignoreDuplicates: false });
+
+  if (error) {
+    console.error('[Subscription Service] Error batch upserting subscriptions:', error);
+    throw new Error(`Failed to batch upsert subscriptions: ${error.message}`);
+  }
+
+  // Invalidate caches for all affected users
+  const userIds = [...new Set(paramsList.map((p) => p.user_id))];
+  try {
+    revalidateTag('subscription');
+    for (const userId of userIds) {
+      revalidateTag(`subscription-${userId}`);
+    }
+  } catch (cacheError) {
+    console.warn('[Subscription Service] Cache invalidation failed (non-critical):', cacheError);
+  }
+}
+
+/**
  * Delete a subscription by provider and external_id
  */
 export async function deleteSubscription(
