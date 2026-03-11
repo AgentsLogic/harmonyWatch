@@ -1,22 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig, serverConfig } from '@/lib/env';
+import { supabase, supabaseAdmin as supabaseService } from '@/lib/supabase';
 import { planFromPriceId } from '@/lib/services/stripe';
 import { checkSubscriptionAccess } from '@/lib/services/subscription-check';
 import { rateLimit, getClientIp } from '@/lib/utils/rate-limit';
 import type { UserSubscription } from '@/app/contexts/user-context';
-
-// Initialize Supabase client with anon key for auth operations
-const supabase = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
-// Initialize Supabase client with service role key for database operations
-const supabaseService = createClient(
-  publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-  serverConfig.SUPABASE_SERVICE_ROLE_KEY
-);
 
 export async function POST(request: NextRequest) {
   try {
