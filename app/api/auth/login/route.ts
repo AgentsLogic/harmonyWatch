@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { publicConfig, serverConfig } from '@/lib/env';
 import { planFromPriceId } from '@/lib/services/stripe';
 import { checkSubscriptionAccess } from '@/lib/services/subscription-check';
+import { rateLimit, getClientIp } from '@/lib/utils/rate-limit';
 import type { UserSubscription } from '@/app/contexts/user-context';
 
 // Initialize Supabase client with anon key for auth operations
@@ -19,6 +20,19 @@ const supabaseService = createClient(
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 attempts per IP per 15 minutes
+    const ip = getClientIp(request);
+    const { success, retryAfter } = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(retryAfter) },
+        }
+      );
+    }
+
     const { email, password } = await request.json();
 
     // Validate input

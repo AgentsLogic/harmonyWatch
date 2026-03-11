@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { publicConfig, serverConfig } from '@/lib/env';
+import { rateLimit, getClientIp } from '@/lib/utils/rate-limit';
 
 // Initialize Supabase clients
 const supabase = createClient(
@@ -21,6 +22,19 @@ const supabaseService = createClient(
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 3 registrations per IP per hour
+    const ip = getClientIp(request);
+    const { success, retryAfter } = rateLimit(`register:${ip}`, 3, 60 * 60 * 1000);
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(retryAfter) },
+        }
+      );
+    }
+
     const { email, password, userType } = await request.json();
 
     // Validate input
