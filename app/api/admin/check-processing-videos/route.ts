@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[Check Processing Videos] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to check processing videos', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to check processing videos'},
       { status: 500 }
     );
   }

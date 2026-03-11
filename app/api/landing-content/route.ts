@@ -32,14 +32,13 @@ export async function GET(request: NextRequest) {
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
         return NextResponse.json(
           { 
-            error: 'Database table not found. Please run the migration: database-migrations/add-landing-page-content.sql',
-            details: error.message 
+            error: 'Database table not found. Please run the migration: database-migrations/add-landing-page-content.sql'
           },
           { status: 500 }
         );
       }
       return NextResponse.json(
-        { error: "Failed to fetch content", details: error.message },
+        { error: "Failed to fetch content"},
         { status: 500 }
       );
     }

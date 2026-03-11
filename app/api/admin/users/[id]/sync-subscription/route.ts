@@ -452,7 +452,7 @@ export async function POST(
   } catch (error) {
     console.error('[Stripe] Failed to sync subscription', error);
     return NextResponse.json(
-      { error: 'Unable to sync subscription', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Unable to sync subscription'},
       { status: 500 }
     );
   }

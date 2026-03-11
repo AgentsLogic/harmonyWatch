@@ -45,7 +45,7 @@ export async function PATCH(
     if (error) {
       console.error('Error updating FAQ:', error);
       return NextResponse.json(
-        { error: 'Failed to update FAQ', details: error.message },
+        { error: 'Failed to update FAQ'},
         { status: 500 }
       );
     }
@@ -84,7 +84,7 @@ export async function DELETE(
     if (error) {
       console.error('Error deleting FAQ:', error);
       return NextResponse.json(
-        { error: 'Failed to delete FAQ', details: error.message },
+        { error: 'Failed to delete FAQ'},
         { status: 500 }
       );
     }

@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('[Admin Bug Reports API] Error fetching bug reports:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch bug reports', details: error.message },
+        { error: 'Failed to fetch bug reports'},
         { status: 500 }
       );
     }

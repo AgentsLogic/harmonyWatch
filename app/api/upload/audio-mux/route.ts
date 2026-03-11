@@ -50,8 +50,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(
       { 
-        error: 'Failed to create upload URL',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Failed to create upload URL'
       },
       { status: 500 }
     );

@@ -485,7 +485,6 @@ export async function POST(request: NextRequest) {
 				
 				// Return error with instructions to fix API key permissions
 				return NextResponse.json({
-					success: false,
 					error: 'API key permissions insufficient. Please contact support or use the customer portal to manage your subscription.',
 					message: 'To turn off auto-renew, please use the "Manage payment method" option to access your billing portal.',
 					redirect_to_portal: true,
