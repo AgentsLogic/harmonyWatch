@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { publicConfig } from '@/lib/env';
-
-// Initialize Supabase client
-  const supabase = createClient(
-    publicConfig.NEXT_PUBLIC_SUPABASE_URL,
-    publicConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
